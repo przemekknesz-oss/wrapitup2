@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przegląd szkicu: transkrypcja 3</title>
+<link rel="stylesheet" href="./przeglad.css">
+</head>
+<body>
+<header class="appbar">
+  <div class="wrap appbar-in">
+    <span class="logo">WrapItUp<span class="dot">.</span></span>
+    <span class="appbar-ctx">Szkic podsumowania · transkrypcja 3</span>
+  </div>
+</header>
+<main class="wrap">
+
+  <div id="review">
+    <div class="review-head">
+      <h1>Przegląd szkicu</h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <div id="groups"></div>
+    <div class="bar" id="bar">
+      <div class="bar-in">
+        <div class="keys" aria-label="Skróty klawiszowe">
+          <span><kbd>↑</kbd> <kbd>↓</kbd> wybór</span>
+          <span><kbd>Z</kbd> zostaw</span>
+          <span><kbd>E</kbd> edytuj</span>
+          <span><kbd>U</kbd> usuń</span>
+          <span><kbd>⌘</kbd><kbd>↵</kbd> zatwierdź</span>
+        </div>
+        <div class="bar-right">
+          <span class="remaining" id="remaining" aria-live="polite"></span>
+          <button class="primary" id="approve" type="button">Zatwierdź</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="clean">
+    <div class="clean-toolbar">
+      <button class="secondary" id="back" type="button">← Wróć do przeglądu</button>
+      <p class="clean-status" id="clean-status"></p>
+    </div>
+    <div class="sheet-wrap">
+      <article class="sheet" id="sheet" aria-label="Podgląd PDF dla ucznia"></article>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Dane przepisane z pliku "transkrypcja 3_szkic.md"
+  const SOURCE_NAME = "transkrypcja 3";
+  const SECTIONS = [
+    { id: "gram", name: "Gramatyka", items: [
+      { wrong: "I have been using it since three weeks", right: "for three weeks (\"for\" z okresem czasu; \"since\" z konkretnym momentem)", status: "pewne",
+        quote: ["I have been using it since three weeks", "Teacher: “For three weeks.” Use “for” with a length of time.", "Student: For three weeks. Yeah. Since… a specific day?", "Teacher: Exactly."] },
+      { wrong: "more easier", right: "easier", status: "pewne",
+        quote: ["I think learning online is more easier when everything is in one place.", "Teacher: “Easier”, without “more”."] },
+      { wrong: "less distractions", right: "fewer distractions", status: "pewne",
+        quote: ["There are less distractions on my laptop when I'm studying.", "Teacher: “Fewer distractions”, because you can count them."] },
+      { wrong: "If the app will give me useful feedback", right: "If the app gives me useful feedback", status: "pewne",
+        quote: ["If the app will give me useful feedback, I'll probably use it regularly.", "Teacher: “If the app gives me useful feedback, I'll probably use it.” Present simple after “if” in this sentence."] },
+      { wrong: "I look forward to use the app", right: "I look forward to using the app", status: "pewne",
+        quote: ["“I look forward to use the app during my holiday,”", "Teacher: “I look forward to using the app.” In “look forward to”, “to” is a preposition, so use the “-ing” form afterwards."] },
+      { wrong: "avoid to open", right: "avoid opening", status: "pewne",
+        quote: ["And I need to avoid to open social media first… avoid opening it.", "Teacher: Exactly. “Avoid opening.” You caught it."] }
+    ]},
+    { id: "vocab", name: "Słownictwo", items: [
+      { wrong: "control the meaning", right: "check the meaning", status: "pewne",
+        quote: ["But I need to control the meaning of “simmer” again.", "Teacher: You need to check the meaning. “Control” isn't the word for looking something up."] },
+      { wrong: "brak błędu: znaczenie \"simmer\"", right: "lektor potwierdził i uzupełnił znaczenie", status: "do sprawdzenia",
+        quote: ["Student: Check the meaning. Right. So “simmer” is… cook slowly, with small bubbles?", "Teacher: Yes, just below boiling or at a very gentle boil."] },
+      { wrong: "improve my mistakes", right: "correct my mistakes (\"improve your English\", ale nie \"improve your mistakes\")", status: "pewne",
+        quote: ["I want to improve my mistakes", "Teacher: You can “correct your mistakes” and “improve your English”. We don't normally say “improve your mistakes”."] },
+      { wrong: "The possibility to close the door", right: "the opportunity", status: "pewne",
+        quote: ["The possibility to close the door and be alone… actually, I mean the opportunity.", "Teacher: Yes, “opportunity” works for having a suitable chance to do it. Good correction."] }
+    ]},
+    { id: "speak", name: "Mówienie", items: [
+      { wrong: "recipe wymówione z dwiema sylabami (\"re-seep\")", right: "trzy sylaby: \"RESS-ih-pee\"; recipe i receipt to różne słowa", status: "pewne",
+        quote: ["Teacher: You said it with two syllables, like “re-seep”. It has three: “RESS-ih-pee”.", "Student: Recipe. Okay. Not like “receipt”.", "Teacher: Exactly. They're different words."] },
+      { wrong: "brak błędu: wymowa \"personalised\"", right: "lektor potwierdził poprawną wymowę", status: "do sprawdzenia",
+        quote: ["“personalised” — is that okay? Personalised exercises?", "Teacher: Yes, that pronunciation was fine."] },
+      { wrong: "vocabulary z akcentem na pierwszej sylabie (\"VO\")", right: "vo-CAB-ulary (akcent na \"cab\")", status: "do sprawdzenia",
+        quote: ["Teacher: You put the main stress on “cab”. It should be on the next syllable: vo-CAB? Let me correct myself — vo-CAB-yuh-luh-ree has the main stress on “cab”. Yours was actually on the first syllable, “VO”. The target is vo-CAB-ulary."] }
+    ]}
+  ];
+</script>
+<script src="./przeglad.js"></script>
+</body>
+</html>

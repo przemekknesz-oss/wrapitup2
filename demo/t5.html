@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przegląd szkicu: transkrypcja 5</title>
+<link rel="stylesheet" href="./przeglad.css">
+</head>
+<body class="consent">
+<header class="appbar">
+  <div class="wrap appbar-in">
+    <span class="logo">WrapItUp<span class="dot">.</span></span>
+    <span class="appbar-ctx">Szkic podsumowania · transkrypcja 5</span>
+  </div>
+</header>
+<main class="wrap">
+  <div id="consent">
+    <h1>Zgoda ucznia</h1>
+    <p class="sub">Przed pierwszym nagraniem lekcji z tym uczniem potwierdź, że uczeń (lub rodzic) wyraził zgodę. Potwierdzenie wystarczy raz.</p>
+
+    <div class="panel">
+      <div class="field">
+        <label for="student-label">Uczeń</label>
+        <input id="student-label" value="Uczeń A" autocomplete="off">
+      </div>
+
+      <div class="field-label">Wariant</div>
+      <div class="segmented" role="radiogroup" aria-label="Wariant zgody">
+        <label><input type="radio" name="variant" value="adult" checked>Uczeń dorosły</label>
+        <label><input type="radio" name="variant" value="minor">Uczeń niepełnoletni (zgoda rodzica)</label>
+      </div>
+
+      <div class="template-head">
+        <div class="field-label">Wzór zgody</div>
+        <div><button class="secondary" type="button" id="copy">Kopiuj tekst</button><span class="copy-note" id="copy-note" aria-live="polite"></span></div>
+      </div>
+      <pre class="template" id="template"></pre>
+      <p class="legal-note">Przykładowy wzór. Przed realnym użyciem wymaga konsultacji prawnej.</p>
+
+      <label class="confirm">
+        <input type="checkbox" id="confirm">
+        <span>Potwierdzam, że uzyskałem zgodę ucznia (lub rodzica)</span>
+      </label>
+      <p class="saved" id="saved" hidden aria-live="polite"></p>
+    </div>
+
+    <div class="footer">
+      <div class="summary-counts">Data potwierdzenia zostanie zapisana na Twoim koncie. Zgodę możesz wycofać w profilu ucznia.</div>
+      <button class="primary" id="to-review" disabled>Zapisz zgodę i rozpocznij nagrywanie</button>
+    </div>
+  </div>
+
+  <div id="lesson">
+    <h1>Lekcja w toku</h1>
+    <div class="panel lesson-panel">
+      <span class="rec"><span class="rec-dot" aria-hidden="true"></span>Nagrywanie</span>
+      <p class="lesson-student" id="lesson-student"></p>
+      <button class="primary" id="end-lesson">Zakończ lekcję i przygotuj szkic</button>
+    </div>
+  </div>
+
+  <div id="review">
+    <div class="review-head">
+      <h1>Przegląd szkicu</h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <div id="groups"></div>
+    <div class="bar" id="bar">
+      <div class="bar-in">
+        <div class="keys" aria-label="Skróty klawiszowe">
+          <span><kbd>↑</kbd> <kbd>↓</kbd> wybór</span>
+          <span><kbd>Z</kbd> zostaw</span>
+          <span><kbd>E</kbd> edytuj</span>
+          <span><kbd>U</kbd> usuń</span>
+          <span><kbd>⌘</kbd><kbd>↵</kbd> zatwierdź</span>
+        </div>
+        <div class="bar-right">
+          <span class="remaining" id="remaining" aria-live="polite"></span>
+          <button class="primary" id="approve" type="button">Zatwierdź</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="clean">
+    <div class="clean-toolbar">
+      <button class="secondary" id="back" type="button">← Wróć do przeglądu</button>
+      <p class="clean-status" id="clean-status"></p>
+    </div>
+    <div class="sheet-wrap">
+      <article class="sheet" id="sheet" aria-label="Podgląd PDF dla ucznia"></article>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Dane przepisane z pliku "transkrypcja 5_szkic.md"
+  const SOURCE_NAME = "transkrypcja 5";
+  const SECTIONS = [
+    { id: "gram", name: "Gramatyka", items: [
+      { wrong: "the train had went", right: "the train had gone (go, went, gone)", status: "pewne",
+        quote: ["by the time she got to the station, the train had went.", "Teacher: Had…?", "Student: Had went. Wait. That's not right, is it?", "Teacher: Had gone. Go, went, gone."] },
+      { wrong: "she didn't knew which platform", right: "she didn't know which platform", status: "pewne",
+        quote: ["but she didn't knew which platform she needed.", "Teacher: She didn't know."] },
+      { wrong: "He suggested to take a bus", right: "He suggested taking a bus", status: "pewne",
+        quote: ["He suggested to take a bus to another town", "Teacher: Yes. “Suggest” followed directly by another verb takes the “-ing” form. “He suggested taking a bus.”"] },
+      { wrong: "brak błędu: \"the train left\" / \"the train had left\"", right: "lektor potwierdził poprawne rozróżnienie", status: "do sprawdzenia",
+        quote: ["Teacher: Now look at these two sentences: “When she arrived, the train left” and “When she arrived, the train had left.” Same meaning?", "Student: No… wait. The second one is easier. She arrived, but the train was already… not there. In the first one, she arrived and then it left. Or at almost the same time.", "Teacher: Exactly."] },
+      { wrong: "brak błędu: \"while\" w zdaniu ucznia", right: "poprawne", status: "do sprawdzenia",
+        quote: ["Student: “While she was waiting for her phone to charge, she talked to the other passenger.” Is that… too long?", "Teacher: No, that's fine."] },
+      { wrong: "brak błędu: pozycja \"eventually\"", right: "na początku lub na końcu zdania; początek to dobry wybór", status: "do sprawdzenia",
+        quote: ["Teacher: Would you put “eventually” at the start or the end?", "Student: At the start, I think. It sounds better there.", "Teacher: Both can work, but the start is a good choice."] }
+    ]},
+    { id: "vocab", name: "Słownictwo", items: [
+      { wrong: "She almost lost the bus", right: "almost missed the bus (jak \"missed the train\")", status: "pewne",
+        quote: ["She almost lost the bus as well, because she stopped to buy water.", "Teacher: Almost missed the bus. Like “missed the train”."] },
+      { wrong: "She borrowed Anna a charger", right: "She lent Anna a charger", status: "pewne",
+        quote: ["She borrowed Anna a charger, and then they started talking.", "Teacher: She lent Anna a charger. The passenger lent it; Anna borrowed it."] },
+      { wrong: "eventually w znaczeniu \"possibly\"", right: "eventually = \"in the end\", często po jakimś czasie lub trudnościach", status: "pewne",
+        quote: ["I always feel like “eventually” should mean… possibly. But it doesn't.", "Teacher: Right. Here it means “in the end”, often after some time or difficulty."] }
+    ]},
+    { id: "speak", name: "Mówienie", items: [
+      { wrong: "island z wymówionym \"s\"", right: "\"s\" nieme: EYE-lənd", status: "pewne",
+        quote: ["Teacher: You're saying the “s”. It's silent in “island”: EYE-lənd."] }
+    ]}
+  ];
+</script>
+<script src="./przeglad.js"></script>
+<script>
+  // Ekran zgody ucznia (makieta: nic nie jest zapisywane poza stroną)
+  const TEMPLATES = {
+    adult: () =>
+`Zgoda na nagrywanie i przetwarzanie lekcji w celu przygotowania podsumowania
+
+Wyrażam zgodę, aby lektor [imię i nazwisko lektora] używał narzędzia WrapItUp do nagrywania dźwięku lekcji online i przetwarzania zapisu rozmowy w celu przygotowania podsumowania lekcji (poprawki, słownictwo, uwagi dotyczące mówienia).
+
+- Nagranie dźwięku jest zamieniane na tekst i usuwane po zatwierdzeniu podsumowania przez lektora, najpóźniej po 7 dniach.
+- Podsumowanie sprawdza i zatwierdza lektor, zanim trafi do mnie.
+- Zgoda jest dobrowolna. Mogę ją wycofać w każdej chwili i poprosić lektora o usunięcie danych z moich lekcji.
+- Zgoda dotyczy wszystkich lekcji z tym lektorem, dopóki jej nie wycofam.`,
+    minor: () =>
+`Zgoda rodzica na nagrywanie i przetwarzanie lekcji dziecka w celu przygotowania podsumowania
+
+Wyrażam zgodę, aby lektor [imię i nazwisko lektora] nagrywał lekcje mojego dziecka [imię dziecka] za pomocą narzędzia WrapItUp (nagranie dźwięku lekcji online) i przetwarzał zapis rozmowy w celu przygotowania podsumowania lekcji (poprawki, słownictwo, uwagi dotyczące mówienia).
+
+- Nagranie dźwięku jest zamieniane na tekst i usuwane po zatwierdzeniu podsumowania przez lektora, najpóźniej po 7 dniach.
+- Podsumowanie sprawdza i zatwierdza lektor, zanim trafi do mojego dziecka.
+- Zgoda jest dobrowolna. Mogę ją wycofać w każdej chwili i poprosić lektora o usunięcie danych z lekcji mojego dziecka.
+- Zgoda dotyczy wszystkich lekcji mojego dziecka z tym lektorem, dopóki jej nie wycofam.`
+  };
+
+  const studentInput = document.getElementById("student-label");
+  const templateBox = document.getElementById("template");
+  const confirmBox = document.getElementById("confirm");
+  const savedBox = document.getElementById("saved");
+  const toReview = document.getElementById("to-review");
+  const copyNote = document.getElementById("copy-note");
+  let confirmedAt = null;
+
+  const today = () => new Date().toLocaleDateString("pl-PL");
+  const studentLabel = () => studentInput.value.trim() || "[etykieta ucznia]";
+  const variant = () => document.querySelector('input[name="variant"]:checked').value;
+
+  function renderConsent() {
+    templateBox.textContent = TEMPLATES[variant()](studentLabel(), confirmedAt || today());
+    savedBox.hidden = !confirmBox.checked;
+    if (confirmBox.checked) savedBox.textContent = `Zgoda zapisana dla: ${studentLabel()}, ${confirmedAt}`;
+    toReview.disabled = !confirmBox.checked;
+  }
+
+  studentInput.addEventListener("input", renderConsent);
+  document.querySelectorAll('input[name="variant"]').forEach(r => r.addEventListener("change", renderConsent));
+  confirmBox.addEventListener("change", () => {
+    confirmedAt = confirmBox.checked ? today() : null;
+    renderConsent();
+  });
+
+  document.getElementById("copy").addEventListener("click", async () => {
+    const text = templateBox.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Zapasowo dla przeglądarek, które blokują schowek dla plików lokalnych
+      const ta = el("textarea");
+      ta.value = text;
+      document.body.append(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    copyNote.textContent = "Skopiowano";
+    setTimeout(() => { copyNote.textContent = ""; }, 2000);
+  });
+
+  toReview.addEventListener("click", () => {
+    if (!confirmBox.checked) return;
+    document.getElementById("lesson-student").textContent = studentLabel();
+    document.body.classList.replace("consent", "recording");
+    window.scrollTo(0, 0);
+  });
+
+  // Ekran lekcji w toku (makieta: nic nie jest nagrywane)
+  document.getElementById("end-lesson").addEventListener("click", () => {
+    document.body.classList.remove("recording");
+    window.scrollTo(0, 0);
+  });
+
+  renderConsent();
+</script>
+</body>
+</html>

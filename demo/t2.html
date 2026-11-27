@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przegląd szkicu: transkrypcja 2</title>
+<link rel="stylesheet" href="./przeglad.css">
+</head>
+<body>
+<header class="appbar">
+  <div class="wrap appbar-in">
+    <span class="logo">WrapItUp<span class="dot">.</span></span>
+    <span class="appbar-ctx">Szkic podsumowania · transkrypcja 2</span>
+  </div>
+</header>
+<main class="wrap">
+
+  <div id="review">
+    <div class="review-head">
+      <h1>Przegląd szkicu</h1>
+      <p class="meta" id="meta"></p>
+    </div>
+    <div id="groups"></div>
+    <div class="bar" id="bar">
+      <div class="bar-in">
+        <div class="keys" aria-label="Skróty klawiszowe">
+          <span><kbd>↑</kbd> <kbd>↓</kbd> wybór</span>
+          <span><kbd>Z</kbd> zostaw</span>
+          <span><kbd>E</kbd> edytuj</span>
+          <span><kbd>U</kbd> usuń</span>
+          <span><kbd>⌘</kbd><kbd>↵</kbd> zatwierdź</span>
+        </div>
+        <div class="bar-right">
+          <span class="remaining" id="remaining" aria-live="polite"></span>
+          <button class="primary" id="approve" type="button">Zatwierdź</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="clean">
+    <div class="clean-toolbar">
+      <button class="secondary" id="back" type="button">← Wróć do przeglądu</button>
+      <p class="clean-status" id="clean-status"></p>
+    </div>
+    <div class="sheet-wrap">
+      <article class="sheet" id="sheet" aria-label="Podgląd PDF dla ucznia"></article>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Dane przepisane z pliku "transkrypcja 2_szkic.md"
+  const SOURCE_NAME = "transkrypcja 2";
+  const SECTIONS = [
+    { id: "gram", name: "Gramatyka", items: [
+      { wrong: "I work here since March", right: "I've worked there since March / I've been working there since March", status: "pewne",
+        quote: ["I work here since March", "Teacher: You've worked there since March, or you've been working there since March."] },
+      { wrong: "There were too much information", right: "There was too much information", status: "pewne",
+        quote: ["There were too much information in the first version… wait, no… there was too much information.", "Teacher: Good correction. “Information” is uncountable, so “there was too much information”."] },
+      { wrong: "Could you explain me what you mean?", right: "Could you explain to me what you mean? / Could you explain what you mean?", status: "pewne",
+        quote: ["I asked her, “Could you explain me what you mean?”", "Teacher: “Could you explain to me what you mean?” Or simply, “Could you explain what you mean?”"] },
+      { wrong: "Have you any other questions? (lektor: gramatycznie poprawne)", right: "Do you have any other questions? (częstsze w wielu kontekstach)", status: "do sprawdzenia",
+        quote: ["“Have you any other questions?” Is that okay?", "Teacher: Yes. It's grammatical, though “Do you have any other questions?” is more common in many contexts."] },
+      { wrong: "My boss suggested to send a short summary", right: "Suggested sending a short summary / Suggested that I send a short summary", status: "pewne",
+        quote: ["My boss suggested to send a short summary to everyone.", "Teacher: “Suggested sending a short summary.” You can also say, “Suggested that I send a short summary.”"] },
+      { wrong: "If I would have more time, I would practise", right: "If I had more time, I would practise", status: "pewne",
+        quote: ["If I would have more time, I would practise with a colleague first.", "Teacher: “If I had more time, I would practise.” No “would” in that “if” clause."] }
+    ]},
+    { id: "vocab", name: "Słownictwo", items: [
+      { wrong: "sensible to criticism", right: "sensitive to criticism", status: "pewne",
+        quote: ["I told my colleague I was sensible to criticism", "Teacher: Here you mean “sensitive to criticism”. “Sensible” means practical or showing good judgement."] },
+      { wrong: "realise the project", right: "complete the project", status: "pewne",
+        quote: ["We need to realise the project before December", "Teacher: Then “complete the project” works here. “Realise the project” isn't the usual choice in this context."] },
+      { wrong: "the actual problem (w znaczeniu: obecny)", right: "the current problem", status: "pewne",
+        quote: ["And the actual problem is the tracking system. I mean the problem now", "Teacher: For “the problem now”, say “the current problem”. “Actual” means real, not current."] },
+      { wrong: "attend difficult questions", right: "handle difficult questions / deal with difficult questions", status: "pewne",
+        quote: ["I think I need to learn how to… attend difficult questions?", "Teacher: Then “handle difficult questions” or “deal with difficult questions”."] }
+    ]},
+    { id: "speak", name: "Mówienie", items: [
+      { wrong: "analysis z akcentem na pierwszej sylabie", right: "a-NAL-y-sis (akcent na drugiej sylabie)", status: "pewne",
+        quote: ["Teacher: You stressed the first syllable in “analysis”. The stress should be on the second: a-NAL-y-sis."] },
+      { wrong: "colleague z akcentem na drugiej sylabie", right: "COLleague (akcent na pierwszej sylabie)", status: "pewne",
+        quote: ["Teacher: You're putting the main stress on the second syllable. Stress the first: COLleague."] },
+      { wrong: "brak błędu: pozytywna uwaga lektora o odpowiedzi w ćwiczeniu", right: "jasna wypowiedź, wyjaśnienie, co jeszcze trzeba ustalić", status: "do sprawdzenia",
+        quote: ["Teacher: Good. That was clear, and you explained what still needs to be decided."] }
+    ]}
+  ];
+</script>
+<script src="./przeglad.js"></script>
+</body>
+</html>
