@@ -316,4 +316,5 @@ body.recording #review { display: none; }
 @media (max-width: 600px) {
   .seg button { min-height: 44px; padding-top: 0; padding-bottom: 0; }
   .quiet { height: auto; padding: 0; font-size: 12.5px; }
+  #approve { min-height: 44px; }
 }
