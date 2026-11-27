@@ -3,215 +3,1562 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Przegląd szkicu: transkrypcja 1</title>
-<link rel="stylesheet" href="./przeglad.css">
+<title>WrapItUp. Case study Product Ownera</title>
+<meta name="description" content="Rozszerzenie do Chrome dla lektorów językowych, które łączy poprawki z lekcji online (głos i wspólny dokument) w szkic podsumowania. Lektor go sprawdza, zatwierdza i wysyła uczniowi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --petrol: #006C76;
+    --ink: #1E2528;
+    --slate: #5C6668;
+    --tint: #D3E6E7;
+    --mist: #EDF4F3;
+    --paper: #F7F6F1;
+    --white: #FFFFFF;
+    --line: #DDE3DF;
+    --citron: #D9E26F;
+    --coral: #F65B62;
+    --shot: 0 24px 60px rgba(30,37,40,.12);
+    --ease: 150ms ease;
+    --gutter: 24px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--citron); color: var(--ink); }
+  img { max-width: 100%; height: auto; display: block; }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  ul, ol { margin: 0 0 16px; padding-left: 24px; max-width: 72ch; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--slate); }
+  strong { font-weight: 700; }
+  a { color: var(--petrol); text-underline-offset: 3px; transition: color var(--ease); }
+  a:hover { color: var(--ink); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--petrol); outline-offset: 3px; border-radius: 4px; }
+
+  .display { font-variation-settings: "opsz" 32; font-weight: 800; letter-spacing: -0.03em; }
+  .num { font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- Ticket shapes (z Happenboard) ---------- */
+  /* Ząbkowana krawędź góra + dół: półkola wycięte w kolorze tła pod spodem */
+  .scallop {
+    --r: 14px; --step: 44px;
+    -webkit-mask:
+      radial-gradient(circle var(--r) at 50% 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top / var(--step) 51% round no-repeat,
+      radial-gradient(circle var(--r) at 50% 100%, #0000 calc(var(--r) - .5px), #000 var(--r)) bottom / var(--step) 51% round no-repeat;
+            mask:
+      radial-gradient(circle var(--r) at 50% 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top / var(--step) 51% round no-repeat,
+      radial-gradient(circle var(--r) at 50% 100%, #0000 calc(var(--r) - .5px), #000 var(--r)) bottom / var(--step) 51% round no-repeat;
+  }
+  /* Zawieszka: wklęsłe narożniki u góry */
+  .tag {
+    --r: 28px;
+    -webkit-mask:
+      radial-gradient(circle var(--r) at 0 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top left / 51% 51% no-repeat,
+      radial-gradient(circle var(--r) at 100% 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top right / 51% 51% no-repeat,
+      linear-gradient(#000 0 0) bottom / 100% 50% no-repeat;
+            mask:
+      radial-gradient(circle var(--r) at 0 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top left / 51% 51% no-repeat,
+      radial-gradient(circle var(--r) at 100% 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top right / 51% 51% no-repeat,
+      linear-gradient(#000 0 0) bottom / 100% 50% no-repeat;
+  }
+  /* Łuki między tłem paper a białą sceną */
+  .arches { height: 56px; background: radial-gradient(circle at 50% 0, var(--paper) 0 47px, var(--white) 48px) 0 0 / 136px 56px round no-repeat; }
+  .arches.is-up { background: radial-gradient(circle at 50% 100%, var(--paper) 0 47px, var(--white) 48px) 0 0 / 136px 56px round no-repeat; }
+  .stage { background: var(--white); }
+  /* Perforacja: pionowa przerywana linia */
+  .perf { width: 6px; height: 152px; margin: 0 auto; border-radius: 3px;
+    background: repeating-linear-gradient(to bottom, var(--line) 0 56px, transparent 56px 96px); }
+
+  /* ---------- Header ---------- */
+  .site-head { padding: 16px var(--gutter) 0; }
+  .site-head .wrap { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap;
+    max-width: 1112px; min-height: 64px; padding: 8px 8px 8px 24px; border-radius: 32px; background: var(--ink); }
+  .logo { font-variation-settings: "opsz" 32; font-weight: 800; letter-spacing: -0.035em; color: var(--ink); text-decoration: none; line-height: 1; }
+  .logo .dot { color: var(--coral); }
+  a.logo:hover { color: var(--ink); }
+  .site-head .logo { font-size: 24px; }
+  .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav a {
+    font-size: 14px; font-weight: 500; color: var(--slate); text-decoration: none;
+    padding: 8px 16px; border-radius: 999px; border: 1.5px solid transparent;
+    transition: color var(--ease), background-color var(--ease), border-color var(--ease), transform var(--ease);
+  }
+  .nav a:hover { color: var(--ink); background: var(--white); border-color: var(--ink); --glow: .6; }
+  .nav a:active { transform: translateY(1px); }
+  .nav a[aria-current="page"] { color: var(--ink); font-weight: 600; background: var(--white); border-color: var(--ink); --glow: .45; }
+  .nav a[aria-current="page"]:hover { --glow: .9; }
+
+  /* ---------- Views ---------- */
+  [data-view] { display: none; }
+  [data-view].is-active { display: block; }
+
+  /* ---------- Type ---------- */
+  h1, h2, h3, h4 { margin: 0; color: var(--ink); }
+  h1.display { font-size: 44px; line-height: 1.02; }
+  h2.display { font-size: 32px; line-height: 1.08; }
+  h3 { font-size: 20px; line-height: 1.25; font-weight: 700; letter-spacing: -0.01em; margin: 56px 0 16px; }
+  h4 { font-size: 16px; font-weight: 700; margin: 32px 0 8px; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); margin: 0 0 16px; }
+  .lede { font-size: 18px; line-height: 1.55; max-width: 52ch; }
+  .muted { color: var(--slate); }
+  .small { font-size: 14px; }
+  mark { background: var(--citron); color: var(--ink); padding: 0 2px; font-weight: 600; }
+
+  /* ---------- Buttons ---------- */
+  .actions { display: flex; flex-wrap: wrap; gap: 16px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-size: 16px; font-weight: 600; line-height: 1.2; text-align: center;
+    min-height: 56px; padding: 16px 24px; border-radius: 10px; text-decoration: none; cursor: pointer;
+    border: 1.5px solid var(--ink); background: var(--white); color: var(--ink);
+    transition: background-color var(--ease), border-color var(--ease), color var(--ease), transform var(--ease);
+    --glow: .3;
+  }
+  .btn:hover { color: var(--ink); border-color: var(--ink); --glow: .9; }
+  .btn:active { transform: translateY(1px); }
+  .band .btn { border-color: transparent; }
+  .band .btn:focus-visible { outline-color: var(--citron); }
+
+  /* ---------- ButtonColorful: rozmyty gradient pod napisem, w kolorach strony (petrol tint → citron) ---------- */
+  .btn, .nav a, .toc a { position: relative; isolation: isolate; overflow: hidden; }
+  .btn::before, .nav a::before, .toc a::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: var(--glow-bg, linear-gradient(90deg, var(--tint), var(--citron)));
+    filter: blur(8px); opacity: var(--glow, 0);
+    transition: opacity 500ms ease;
+  }
+  /* Linki w tekście: podkreślenie tint → citron, które na hover wypełnia link */
+  .cs-main a {
+    color: var(--petrol); text-decoration: none; border-radius: 4px; padding: 0 2px; margin: 0 -2px;
+    background: linear-gradient(90deg, var(--tint), var(--citron)) 0 100% / 100% 3px no-repeat;
+    transition: background-size 300ms ease, color 300ms ease;
+  }
+  .cs-main a:hover { color: var(--ink); background-size: 100% 100%; }
+  .cs-main a:active { color: var(--ink); background-size: 100% 100%; filter: brightness(.95); }
+
+  /* ---------- Pills ---------- */
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 10px; border-radius: 999px; white-space: nowrap; background: var(--mist); color: var(--ink); border: 1px solid var(--line); }
+  .pill-no { background: var(--coral); border-color: var(--coral); color: var(--white); }
+  .pill-mid { background: var(--citron); border-color: var(--citron); color: var(--ink); }
+  .pill-yes, .pill-must { background: var(--petrol); border-color: var(--petrol); color: var(--white); }
+  .pill-should { background: var(--tint); border-color: var(--tint); color: var(--ink); }
+  .pill-could { background: var(--mist); color: var(--ink); }
+  .pill-wont { background: var(--white); color: var(--slate); }
+
+  .card { background: var(--white); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+  .stage .card { background: var(--paper); }
+  .card > :last-child { margin-bottom: 0; }
+  .card h4:first-child { margin-top: 0; }
+
+  /* ---------- START: hero (układ wzorowany na Spark: wszystko na osi, screenshot pod tekstem) ---------- */
+  .hero { padding: 56px 0 56px; text-align: center; }
+  .hero-copy { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+  .badge { display: inline-block; font-size: 14px; font-weight: 600; line-height: 1; padding: 10px 16px; margin: 0 0 24px;
+    border-radius: 999px; border: 1.5px solid var(--ink); background: var(--white); color: var(--ink); }
+  .hero .wordmark { font-size: 72px; line-height: .92; margin: 0 0 32px; }
+  .hero .lede { margin: 0 auto; font-size: 19px; }
+  .facts { display: grid; gap: 24px; margin: 56px auto 0; padding: 32px 0 0; border-top: 1.5px solid var(--ink); max-width: 1000px; text-align: center; }
+  .facts > div { display: grid; gap: 8px; align-content: start; }
+  .facts dt { font-size: 13px; font-weight: 700; color: var(--slate); }
+  .facts dd { margin: 0 auto; font-size: 15px; line-height: 1.45; max-width: 28ch; }
+  .shot.is-hero { max-width: 1040px; margin: 56px auto 0; }
+  .shot.is-hero .frame { padding: 0; border-radius: 8px; border: 1px solid var(--line); background: var(--white); box-shadow: var(--shot); max-height: 600px; }
+  .shot.is-hero .frame img { width: 100%; }
+  /* Żywe demo w ramce: iframe 1280 px przeskalowany do szerokości ramki (JS ustawia --s) */
+  .live { position: relative; }
+  .live-demo { display: none; position: absolute; top: 0; left: 0; width: 1280px; border: 0; background: var(--paper);
+    transform: scale(var(--s, 1)); transform-origin: 0 0; pointer-events: none; }
+  .shot.is-hero .live.is-on { width: 100%; aspect-ratio: 1926 / 1672; max-height: none; }
+  .live.is-on .live-img { visibility: hidden; }
+  .live.is-on .live-demo { display: block; }
+  .live.is-hot .live-demo { pointer-events: auto; }
+  @media print {
+    .shot.is-hero .live.is-on { aspect-ratio: auto; max-height: 600px; }
+    .live.is-on .live-img { visibility: visible; }
+    .live-demo { display: none !important; }
+  }
+  .shot.is-hero figcaption { margin: 24px auto 0; text-align: center; }
+  .meta { display: grid; grid-template-columns: max-content 1fr; gap: 8px 24px; margin: 32px 0; font-size: 14px; max-width: 560px; }
+  .meta dt { color: var(--slate); font-weight: 500; }
+  .meta dd { margin: 0; }
+  .shot { margin: 0; }
+  .shot .frame { background: var(--white); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .shot figcaption { font-size: 14px; color: var(--slate); margin-top: 16px; max-width: 60ch; }
+
+  /* ---------- Bilety z liczbami ---------- */
+  .numbers-head { text-align: center; padding: 32px 0 32px; }
+  .numbers-head h2 { font-size: 40px; line-height: 1; }
+  .tickets { display: grid; grid-template-columns: 1fr 1fr; gap: 32px 16px; max-width: 920px; margin: 0 auto; padding: 0 0 96px; list-style: none; }
+  .tickets li { margin: 0; }
+  .ticket {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    min-height: 216px; padding: 48px 16px 32px; transform: rotate(var(--rot, 0deg));
+  }
+  .ticket .big { font-size: 40px; line-height: 1; margin-bottom: 16px; white-space: nowrap; }
+  .ticket .big .den { font-size: 22px; letter-spacing: -0.02em; opacity: .7; }
+  .ticket p { margin: 0; font-size: 14px; line-height: 1.4; max-width: 20ch; }
+  .ticket.scallop { --r: 12px; --step: 40px; padding-top: 40px; padding-bottom: 40px; }
+  .t-tint { background: var(--tint); }
+  .t-ink { background: var(--ink); color: var(--white); }
+  .t-ink .big { color: var(--coral); }
+  .t-ink .big .den { opacity: 1; }
+  .t-citron { background: var(--citron); }
+  .t-petrol { background: var(--petrol); color: var(--white); }
+  .t-white { background: var(--white); }
+  .tickets li:nth-child(1) .ticket { --rot: -1.5deg; }
+  .tickets li:nth-child(2) .ticket { --rot: 1.5deg; }
+  .tickets li:nth-child(3) .ticket { --rot: 1deg; }
+  .tickets li:nth-child(4) .ticket { --rot: -1.5deg; }
+
+  /* ---------- Ciemny pas z wyborem ścieżki ---------- */
+  .band { background: var(--ink); color: var(--white); }
+  .band.scallop { --r: 14px; --step: 48px; }
+  .choose { display: grid; padding: 96px 0; }
+  .route { padding: 32px 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+  .route + .route { border-top: 2px dashed var(--slate); }
+  .route h2 { color: var(--white); font-size: 40px; line-height: 1; }
+  .route .time { color: var(--tint); font-size: 16px; margin: 0; }
+  .route .btn { margin-top: 16px; min-width: 240px; }
+
+  /* ---------- SKRÓT ---------- */
+  .page-head { padding: 96px 0 96px; text-align: center; }
+  .page-head h1 { font-size: 56px; }
+  .page-head .time { color: var(--slate); margin: 24px auto 0; }
+  .brief { padding: 96px 0; }
+  .brief-list { margin: 0; display: grid; }
+  .brief-list > div { display: grid; gap: 8px; padding: 24px 0; border-top: 2px dashed var(--slate); }
+  .brief-list > div:first-child { border-top: 0; padding-top: 0; }
+  .brief-list > div:last-child { padding-bottom: 0; }
+  .brief-list dt { font-variation-settings: "opsz" 32; font-weight: 800; letter-spacing: -0.02em; font-size: 24px; line-height: 1.2; color: var(--white); }
+  .brief-list dd { margin: 0; max-width: 64ch; color: var(--white); font-size: 17px; }
+  .skrot-numbers { padding: 96px 0 32px; }
+  .skrot-numbers .tickets { padding-bottom: 56px; }
+  .lessons { display: grid; gap: 16px; margin: 0 0 56px; }
+  .lessons h3 { margin: 0 0 16px; font-size: 20px; }
+  .lessons ul { padding-left: 20px; margin: 0; font-size: 15px; }
+  .next { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px; padding: 56px 0 96px; border-top: 1.5px solid var(--ink); }
+  .next .t { font-variation-settings: "opsz" 32; font-weight: 800; letter-spacing: -0.03em; font-size: 40px; line-height: 1.05; margin: 0; }
+  .next .time { color: var(--slate); margin: 8px auto 0; }
+
+  /* ---------- CASE STUDY ---------- */
+  .cs-head { padding: 96px 0 56px; text-align: center; }
+  .cs-head h1 { max-width: 16ch; margin: 0 auto; }
+  .cs-head .facts { margin-top: 56px; }
+  .facts { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
+  .page-head p, .cs-head p, .next p { margin-left: auto; margin-right: auto; }
+  .cs-layout { display: grid; gap: 32px; padding: 32px 0 96px; }
+  .toc { font-size: 14px; }
+  .toc .card { padding: 8px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { margin: 0; }
+  .toc a {
+    display: grid; grid-template-columns: 24px 1fr; gap: 8px; padding: 8px; border-radius: 10px;
+    color: var(--slate); text-decoration: none; line-height: 1.35;
+    transition: color var(--ease), background-color var(--ease), transform var(--ease);
+  }
+  .toc a:hover { color: var(--ink); background: var(--white); --glow: .6; }
+  .toc a:active { transform: translateY(1px); }
+  .toc a.is-current { color: var(--ink); background: var(--white); font-weight: 600; --glow: .45; }
+  .toc a.is-current:hover { --glow: .9; }
+  .toc .n { color: var(--petrol); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .cs-main { min-width: 0; }
+  .chapter { padding-bottom: 56px; scroll-margin-top: 24px; }
+  .chapter + .chapter { padding-top: 32px; }
+  .chapter-head { display: flex; align-items: center; gap: 16px; padding-bottom: 24px; margin-bottom: 32px; border-bottom: 2px dashed var(--line); }
+  .chapter-head .no {
+    flex: none; display: grid; place-items: center; width: 64px; height: 72px; padding-top: 8px;
+    background: var(--petrol); color: var(--white); font-size: 24px; line-height: 1; letter-spacing: -0.02em;
+    --r: 14px;
+    -webkit-mask:
+      radial-gradient(circle var(--r) at 0 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top left / 51% 51% no-repeat,
+      radial-gradient(circle var(--r) at 100% 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top right / 51% 51% no-repeat,
+      linear-gradient(#000 0 0) bottom / 100% 50% no-repeat;
+            mask:
+      radial-gradient(circle var(--r) at 0 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top left / 51% 51% no-repeat,
+      radial-gradient(circle var(--r) at 100% 0, #0000 calc(var(--r) - .5px), #000 var(--r)) top right / 51% 51% no-repeat,
+      linear-gradient(#000 0 0) bottom / 100% 50% no-repeat;
+  }
+  .chapter-head h2 { font-size: 28px; }
+  .chapter-head + h3 { margin-top: 0; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--white); margin: 0 0 16px; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  thead th { background: var(--tint); text-align: left; font-weight: 600; font-size: 13px; padding: 12px 16px; vertical-align: bottom; }
+  tbody th { text-align: left; font-weight: 600; }
+  td, tbody th { padding: 12px 16px; border-top: 1px solid var(--line); vertical-align: top; }
+  tbody tr:first-child td, tbody tr:first-child th { border-top: 0; }
+  table.wide { min-width: 820px; }
+  table.xwide { min-width: 1040px; }
+  tr.is-key td, tr.is-key th { background: var(--mist); }
+  tr.is-total td { font-weight: 700; }
+  td.c { white-space: nowrap; }
+  .table-note { font-size: 13px; color: var(--slate); }
+
+  .callout { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--petrol); border-radius: 16px; padding: 24px; margin: 24px 0; }
+  .callout.is-coral { border-left-color: var(--coral); }
+  .callout > :last-child { margin-bottom: 0; }
+  .callout .lead { font-variation-settings: "opsz" 32; font-weight: 800; letter-spacing: -0.02em; font-size: 20px; line-height: 1.3; margin-bottom: 16px; }
+  .block { background: var(--ink); color: var(--white); padding: 40px 32px; margin: 24px 0; --r: 10px; --step: 32px; }
+  .block p { margin: 0; font-size: 18px; line-height: 1.5; }
+  .block strong { font-weight: 700; }
+
+  .sources { display: grid; gap: 16px; margin: 16px 0 0; }
+  .sources .card { font-size: 14px; line-height: 1.55; }
+  .sources h4 { font-size: 15px; margin: 0 0 8px; line-height: 1.35; }
+  .sources p { margin: 0 0 8px; }
+
+  .qlist { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); overflow: hidden; font-size: 14px; }
+  .qlist > div { display: grid; grid-template-columns: 48px 1fr; gap: 16px; padding: 12px 16px; border-top: 1px solid var(--line); }
+  .qlist > div:first-child { border-top: 0; }
+  .qlist dt { font-weight: 700; color: var(--petrol); font-variant-numeric: tabular-nums; }
+  .qlist dd { margin: 0; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; max-width: 72ch; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 32px 1fr; gap: 16px; padding: 16px 0; border-top: 2px dashed var(--line); margin: 0; }
+  .steps li:first-child { border-top: 0; padding-top: 0; }
+  .steps li::before { content: counter(s); font-variation-settings: "opsz" 32; font-weight: 800; color: var(--petrol); font-size: 20px; line-height: 1.3; }
+
+  .prompt { background: var(--mist); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin: 16px 0 24px; font-size: 14px; }
+  .prompt h4 { font-size: 14px; margin: 24px 0 8px; }
+  .prompt h4:first-child { margin-top: 0; font-size: 16px; }
+  .prompt p, .prompt ul { margin-bottom: 8px; }
+
+  .shots { display: grid; gap: 32px; margin: 24px 0 32px; }
+  .shots .frame { max-height: 640px; }
+  .review-shot { margin: 32px 0; }
+  /* Link do interaktywnego prototypu: drugorzędny, tekstowy, w kolorze petrol */
+  .proto { margin: 16px 0 0; }
+  .hero .proto { margin: 16px auto 0; text-align: center; }
+  .review-shot + .proto { margin: -16px 0 24px; }
+  a.proto-link, .cs-main a.proto-link {
+    display: inline-block; padding: 8px 0; margin: 0; background: none; border-radius: 4px;
+    font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--petrol);
+    text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px;
+    transition: color var(--ease), text-decoration-color var(--ease);
+  }
+  a.proto-link:hover, .cs-main a.proto-link:hover { color: var(--ink); background: none; }
+  a.proto-link:active { opacity: .7; }
+
+  .gwt { display: grid; gap: 16px; margin: 16px 0; }
+  .gwt h4 { margin: 0 0 16px; font-size: 15px; }
+  .gwt dl { margin: 0; font-size: 14px; }
+  .gwt dt { font-weight: 700; color: var(--petrol); font-size: 13px; }
+  .gwt dd { margin: 0 0 16px; }
+  .gwt dd:last-child { margin-bottom: 0; }
+
+  .roadmap { display: grid; gap: 16px; margin: 16px 0 32px; }
+  .roadmap .card { display: flex; flex-direction: column; }
+  .roadmap h4 { font-variation-settings: "opsz" 32; font-weight: 800; letter-spacing: -0.02em; font-size: 24px; margin: 0 0 8px; }
+  .roadmap .goal { font-size: 14px; color: var(--slate); margin-bottom: 16px; }
+  .roadmap ul, .roadmap ol { font-size: 14px; padding-left: 20px; }
+  .roadmap .gate { margin-top: auto; padding-top: 16px; border-top: 2px dashed var(--line); font-size: 14px; }
+
+  .learn { display: grid; gap: 16px; }
+  .learn h4 { margin: 0 0 16px; font-size: 18px; }
+  .learn ul { padding-left: 20px; font-size: 15px; margin: 0; }
+
+  /* ---------- Footer ---------- */
+  .site-foot { padding: 32px 0 40px; font-size: 14px; color: var(--slate); }
+  .site-foot .wrap { display: flex; gap: 16px 24px; flex-wrap: wrap; align-items: baseline; }
+  .site-foot .logo { font-size: 18px; }
+
+  /* ---------- ≥ 760 px ---------- */
+  @media (min-width: 760px) {
+    :root { --gutter: 40px; }
+    body { font-size: 17px; }
+    h1.display { font-size: 64px; }
+    h2.display { font-size: 40px; }
+    h3 { font-size: 22px; }
+    .hero .wordmark { font-size: 136px; }
+    .hero .lede { font-size: 21px; }
+    .facts { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    .site-head .wrap { border-radius: 999px; }
+    .numbers-head h2 { font-size: 56px; }
+    .tickets { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .ticket .big { font-size: 56px; }
+    .ticket .big .den { font-size: 28px; }
+    .ticket p { font-size: 15px; }
+    .tickets li:nth-child(1) .ticket { --rot: -2deg; }
+    .tickets li:nth-child(2) .ticket { --rot: 2.5deg; }
+    .tickets li:nth-child(3) .ticket { --rot: 1.5deg; }
+    .tickets li:nth-child(4) .ticket { --rot: -2.5deg; }
+    .tickets li:nth-child(even) { margin-top: 32px; }
+    .choose { grid-template-columns: 1fr 1fr; }
+    .route { padding: 16px 40px; }
+    .route:first-child { padding-left: 0; }
+    .route + .route { border-top: 0; border-left: 2px dashed var(--slate); }
+    .route h2 { font-size: 56px; }
+    .page-head h1 { font-size: 112px; }
+    .next .t { font-size: 56px; }
+    .brief-list > div { grid-template-columns: 200px 1fr; gap: 32px; align-items: baseline; }
+    .lessons { grid-template-columns: repeat(3, 1fr); }
+    .sources { grid-template-columns: 1fr 1fr; }
+    .shots { grid-template-columns: 1fr 1fr; }
+    .gwt { grid-template-columns: repeat(3, 1fr); }
+    .roadmap { grid-template-columns: repeat(3, 1fr); }
+    .chapter-head h2 { font-size: 36px; }
+    .chapter-head .no { width: 72px; height: 80px; font-size: 28px; }
+  }
+  @media (min-width: 1000px) {
+    h1.display { font-size: 80px; }
+    .hero { padding: 96px 0 96px; }
+    .hero .wordmark { font-size: 176px; }
+    .cs-layout { grid-template-columns: 248px 1fr; gap: 56px; padding-top: 56px; }
+    table.wide, table.xwide { min-width: 0; }
+    .toc .card { position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow: auto; }
+  }
+  /* ---------- Velaris: animowane tło na górze strony ---------- */
+  .velaris { position: absolute; top: 0; left: 0; width: 100%; height: 0; display: block; pointer-events: none; z-index: 0; }
+  .site-head, main, .site-foot { position: relative; z-index: 1; }
+  .site-head .logo, .site-head a.logo:hover { color: var(--white); }
+  .site-head .logo:focus-visible, .site-head .nav a:focus-visible { outline-color: var(--citron); }
+  .site-head .nav a { color: var(--tint); }
+  .site-head .nav a:hover, .site-head .nav a[aria-current="page"] { color: var(--ink); border-color: var(--white); }
+  .nav a::before { inset: -8px; }               /* rozmycie nie blednie na krawędziach małej pigułki */
+  .nav a:hover, .nav a[aria-current="page"]:hover { --glow: 1; }
+
+  /* ---------- Minimalne animacje ---------- */
+  /* Kropka w logo: podskakuje przy najechaniu */
+  .logo .dot { display: inline-block; transition: transform 350ms cubic-bezier(.3, 1.8, .5, 1); }
+  a.logo:hover .dot { transform: translateY(-0.18em) scale(1.25); }
+  /* Hero: jedno krótkie wejście przy wczytaniu, potem kropka „spada” na miejsce */
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes drop { 0% { opacity: 0; transform: translateY(-0.9em); } 55% { opacity: 1; transform: translateY(0.06em); } 75% { transform: translateY(-0.04em); } 100% { transform: none; } }
+  .hero-copy > *, .hero .shot.is-hero { animation: rise 700ms cubic-bezier(.2, .7, .2, 1) both; }
+  .hero-copy > :nth-child(2) { animation-delay: 120ms; }
+  .hero-copy > :nth-child(3) { animation-delay: 220ms; }
+  .hero .shot.is-hero { animation-delay: 340ms; }
+  .hero .wordmark .dot { animation: drop 800ms cubic-bezier(.3, .7, .3, 1) 650ms both; }
+  /* Strzałka w przyciskach przesuwa się w prawo */
+  .btn .arr { display: inline-block; transition: transform 250ms ease; }
+  .btn:hover .arr { transform: translateX(4px); }
+  /* Bilety prostują się i lekko unoszą */
+  .ticket { transition: transform 300ms cubic-bezier(.3, 1.4, .5, 1); }
+  .ticket:hover { transform: rotate(0deg) translateY(-6px); }
+
+  /* Kluczowe liczby: bilety wskakują po kolei, gdy wjeżdżają w ekran (tylko z JS, bez reduced-motion) */
+  .reveal-on .tickets li { opacity: 0; transform: translateY(48px) rotate(calc(var(--d, 1) * 6deg)) scale(.94);
+    transition: opacity 500ms ease, transform 800ms cubic-bezier(.2, .9, .25, 1.25); transition-delay: calc(var(--i, 0) * 120ms); }
+  .reveal-on .tickets li:nth-child(even) { --d: -1; }
+  .reveal-on .tickets li.is-in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
 </head>
 <body>
-<header class="appbar">
-  <div class="wrap appbar-in">
-    <span class="logo">WrapItUp<span class="dot">.</span></span>
-    <span class="appbar-ctx">Szkic podsumowania · transkrypcja 1</span>
+<canvas class="velaris" aria-hidden="true"></canvas>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="logo" href="#start" aria-label="WrapItUp, start">WrapItUp<span class="dot">.</span></a>
+    <nav class="nav" aria-label="Widoki">
+      <a href="#start" data-nav="start">Start</a>
+      <a href="#skrot" data-nav="skrot">Skrót</a>
+      <a href="#case-study" data-nav="case-study">Pełne case study</a>
+    </nav>
   </div>
 </header>
-<main class="wrap">
-  <div id="consent">
-    <h1>Zgoda ucznia</h1>
-    <p class="sub">Przed pierwszym nagraniem lekcji z tym uczniem potwierdź, że uczeń (lub rodzic) wyraził zgodę. Potwierdzenie wystarczy raz.</p>
 
-    <div class="panel">
-      <div class="field">
-        <label for="student-label">Uczeń</label>
-        <input id="student-label" value="Uczeń A" autocomplete="off">
+<main>
+
+<!-- ================= START ================= -->
+<section data-view="start" aria-label="Start">
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-copy">
+        <h1 class="logo wordmark">WrapItUp<span class="dot">.</span></h1>
+        <p class="lede">Rozszerzenie do Chrome dla lektorów językowych, które łączy poprawki z lekcji online w szkic podsumowania. Lektor go sprawdza, zatwierdza i wysyła uczniowi.</p>
       </div>
-
-      <div class="field-label">Wariant</div>
-      <div class="segmented" role="radiogroup" aria-label="Wariant zgody">
-        <label><input type="radio" name="variant" value="adult" checked>Uczeń dorosły</label>
-        <label><input type="radio" name="variant" value="minor">Uczeń niepełnoletni (zgoda rodzica)</label>
-      </div>
-
-      <div class="template-head">
-        <div class="field-label">Wzór zgody</div>
-        <div><button class="secondary" type="button" id="copy">Kopiuj tekst</button><span class="copy-note" id="copy-note" aria-live="polite"></span></div>
-      </div>
-      <pre class="template" id="template"></pre>
-      <p class="legal-note">Przykładowy wzór. Przed realnym użyciem wymaga konsultacji prawnej.</p>
-
-      <label class="confirm">
-        <input type="checkbox" id="confirm">
-        <span>Potwierdzam, że uzyskałem zgodę ucznia (lub rodzica)</span>
-      </label>
-      <p class="saved" id="saved" hidden aria-live="polite"></p>
-    </div>
-
-    <div class="footer">
-      <div class="summary-counts">Data potwierdzenia zostanie zapisana na Twoim koncie. Zgodę możesz wycofać w profilu ucznia.</div>
-      <button class="primary" id="to-review" disabled>Zapisz zgodę i rozpocznij nagrywanie</button>
-    </div>
-  </div>
-
-  <div id="lesson">
-    <h1>Lekcja w toku</h1>
-    <div class="panel lesson-panel">
-      <span class="rec"><span class="rec-dot" aria-hidden="true"></span>Nagrywanie</span>
-      <p class="lesson-student" id="lesson-student"></p>
-      <button class="primary" id="end-lesson">Zakończ lekcję i przygotuj szkic</button>
-    </div>
-  </div>
-
-  <div id="review">
-    <div class="review-head">
-      <h1>Przegląd szkicu</h1>
-      <p class="meta" id="meta"></p>
-    </div>
-    <div id="groups"></div>
-    <div class="bar" id="bar">
-      <div class="bar-in">
-        <div class="keys" aria-label="Skróty klawiszowe">
-          <span><kbd>↑</kbd> <kbd>↓</kbd> wybór</span>
-          <span><kbd>Z</kbd> zostaw</span>
-          <span><kbd>E</kbd> edytuj</span>
-          <span><kbd>U</kbd> usuń</span>
-          <span><kbd>⌘</kbd><kbd>↵</kbd> zatwierdź</span>
+      <figure class="shot is-hero">
+        <div class="frame live" id="live">
+          <img class="live-img" src="content/img/przeglad-v2.png" width="1926" height="1672" alt="Wersja po zmianach: „Zatwierdź” jest nieaktywny, dopóki zostaje pozycja do sprawdzenia.">
+          <iframe class="live-demo" data-src="demo/index.html" loading="lazy" title="Interaktywny prototyp WrapItUp" tabindex="-1"></iframe>
         </div>
-        <div class="bar-right">
-          <span class="remaining" id="remaining" aria-live="polite"></span>
-          <button class="primary" id="approve" type="button">Zatwierdź</button>
+        <figcaption>Zbudowałem prototyp ekranu przeglądu szkicu. Lektor zostawia, edytuje lub usuwa pozycje.</figcaption>
+      </figure>
+      <p class="proto"><a class="proto-link" href="demo/" target="_blank" rel="noopener">Otwórz prototyp na pełnym ekranie</a></p>
+      <dl class="facts">
+        <div><dt>Autor</dt><dd>Przemysław Knesz</dd></div>
+        <div><dt>Rola</dt><dd>Product Owner: discovery, wymagania, backlog i priorytetyzacja, metryki sukcesu</dd></div>
+        <div><dt>Użytkownicy</dt><dd>Niezależni lektorzy językowi prowadzący zajęcia online</dd></div>
+        <div><dt>Status</dt><dd>Koncepcja produktu z prototypem, przed walidacją techniczną</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="arches" aria-hidden="true"></div>
+  <div class="stage">
+    <div class="perf" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="numbers-head"><h2 class="display">Kluczowe liczby</h2></div>
+      <ul class="tickets">
+        <li><div class="ticket tag t-tint"><span class="big display num">15</span><p>lektorów w ankiecie, 7 źródeł naukowych, 8 konkurentów</p></div></li>
+        <li><div class="ticket scallop t-ink"><span class="big display num">13<span class="den">/15</span></span><p>najbardziej męczy zbieranie uwag z kilku miejsc</p></div></li>
+        <li><div class="ticket tag t-citron"><span class="big display num">19<span class="den">/22</span></span><p>poprawek prototyp zapisał poprawnie; wychwycił wszystkie 22</p></div></li>
+        <li><div class="ticket scallop t-petrol"><span class="big display num">≤ 5 min</span><p>cel na podsumowanie, dziś mediana 6–10 min</p></div></li>
+      </ul>
+    </div>
+
+    <div class="band scallop">
+      <div class="wrap">
+        <div class="choose">
+          <div class="route">
+            <h2 class="display">Skrót</h2>
+            <p class="time">Ok. 2 minuty</p>
+            <a class="btn btn-primary" href="#skrot">Czytaj skrót <span class="arr" aria-hidden="true">→</span></a>
+          </div>
+          <div class="route">
+            <h2 class="display">Pełne case study</h2>
+            <p class="time">Ok. 25 minut</p>
+            <a class="btn btn-light" href="#case-study">Czytaj całość <span class="arr" aria-hidden="true">→</span></a>
+          </div>
         </div>
       </div>
     </div>
+    <div class="perf" aria-hidden="true"></div>
+  </div>
+  <div class="arches is-up" aria-hidden="true"></div>
+</section>
+
+<!-- ================= SKRÓT ================= -->
+<section data-view="skrot" aria-label="Skrót">
+  <div class="wrap">
+    <div class="page-head">
+      <h1 class="display">W skrócie</h1>
+      <p class="time">Ok. 2 minuty</p>
+    </div>
   </div>
 
-  <div id="clean">
-    <div class="clean-toolbar">
-      <button class="secondary" id="back" type="button">← Wróć do przeglądu</button>
-      <p class="clean-status" id="clean-status"></p>
-    </div>
-    <div class="sheet-wrap">
-      <article class="sheet" id="sheet" aria-label="Podgląd PDF dla ucznia"></article>
+  <div class="band scallop">
+    <div class="wrap">
+      <dl class="brief brief-list">
+        <div><dt>Problem</dt><dd>Niezależni lektorzy online po każdej lekcji ręcznie składają poprawki z kilku miejsc (głos, wspólny dokument, notatki) w jedno podsumowanie.</dd></div>
+        <div><dt>Discovery</dt><dd>7 źródeł naukowych, analiza 8 konkurentów i ankieta wśród 15 lektorów. Pierwotna teza, że lektorzy gubią dużo poprawek ustnych, <mark>nie potwierdziła się</mark>. Potwierdził się za to inny ból: 13 z 15 lektorów najbardziej męczy zbieranie uwag z kilku miejsc.</dd></div>
+        <div><dt>Decyzja</dt><dd>Zmieniłem kierunek. MVP to rozszerzenie Chrome, które łączy poprawki ze wspólnego dokumentu i z dźwięku lekcji w jeden szkic, a lektor go sprawdza i zatwierdza.</dd></div>
+        <div><dt>Prototyp</dt><dd>Model wychwycił wszystkie 22 poprawki z 3 transkrypcji, ale 3 zapisał z błędem. Test pokazał też wadę UX ekranu przeglądu, którą poprawiłem w kryteriach akceptacji.</dd></div>
+        <div><dt>Dalej</dt><dd>Walidacja techniczna (T1–T4) przed budową, potem pilotaż z 5 lektorami. Cel: podsumowanie w 5 minut lub szybciej, zamiast obecnych 6–10.</dd></div>
+      </dl>
     </div>
   </div>
+
+  <div class="wrap">
+    <div class="skrot-numbers">
+      <div class="numbers-head" style="padding-top:0"><h2 class="display">Kluczowe liczby</h2></div>
+      <ul class="tickets">
+        <li><div class="ticket tag t-tint"><span class="big display num">15</span><p>lektorów w ankiecie, 7 źródeł naukowych, 8 konkurentów</p></div></li>
+        <li><div class="ticket scallop t-ink"><span class="big display num">13<span class="den">/15</span></span><p>najbardziej męczy zbieranie uwag z kilku miejsc</p></div></li>
+        <li><div class="ticket tag t-white"><span class="big display num">19<span class="den">/22</span></span><p>poprawek prototyp zapisał poprawnie; wychwycił wszystkie 22</p></div></li>
+        <li><div class="ticket scallop t-petrol"><span class="big display num">≤ 5 min</span><p>cel na podsumowanie, dziś mediana 6–10 min</p></div></li>
+      </ul>
+    </div>
+
+    <div class="lessons">
+      <div class="card">
+        <h3>Czego się nauczyłem</h3>
+        <ul>
+          <li>Własne doświadczenie to hipoteza, a nie dowód.</li>
+          <li>Niepotwierdzona hipoteza też jest wynikiem.</li>
+          <li>Metoda oceny ma taki sam wpływ jak sam wynik.</li>
+          <li>Priorytetyzacja to decyzja, a nie wynik wzoru.</li>
+          <li>Dobry backlog zależy od wąskiego gardła.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Co zadziałało</h3>
+        <ul>
+          <li>Mierzalne hipotezy przed ankietą.</li>
+          <li>Pivot zamiast porzucenia projektu.</li>
+          <li>Prototyp przed backlogiem.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Co zrobiłbym inaczej</h3>
+        <ul>
+          <li>Wywiady przed ankietą.</li>
+          <li>Progi testu prototypu zapisane przed testem.</li>
+          <li>Najpierw najtańszy test ryzyka.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="next">
+      <div>
+        <p class="t">Pełne case study</p>
+        <p class="time">Ok. 25 minut</p>
+      </div>
+      <a class="btn btn-primary" href="#case-study">Czytaj całość <span class="arr" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CASE STUDY ================= -->
+<section data-view="case-study" aria-label="Pełne case study">
+  <div class="wrap">
+    <div class="cs-head">
+      <p class="badge">Pełne case study · Ok. 25 minut</p>
+      <h1 class="display">WrapItUp: case study Product Ownera</h1>
+      <dl class="facts">
+        <div><dt>Autor</dt><dd>Przemysław Knesz</dd></div>
+        <div><dt>Rola</dt><dd>Product Owner: discovery, wymagania, backlog i priorytetyzacja, metryki sukcesu</dd></div>
+        <div><dt>Użytkownicy</dt><dd>Niezależni lektorzy językowi prowadzący zajęcia online</dd></div>
+        <div><dt>Status</dt><dd>Koncepcja produktu z prototypem, przed walidacją techniczną</dd></div>
+        <div><dt>Typ projektu</dt><dd>Indywidualne studium przypadku</dd></div>
+      </dl>
+    </div>
+  </div>
+  <div class="arches" aria-hidden="true"></div>
+  <div class="stage">
+  <div class="wrap">
+    <div class="cs-layout">
+      <nav class="toc" aria-label="Spis treści">
+        <div class="card">
+          <ol>
+            <li><a href="#geneza"><span class="n"></span><span>Geneza pomysłu</span></a></li>
+            <li><a href="#rozdzial-1"><span class="n">1</span><span>Problem discovery i luka rynkowa</span></a></li>
+            <li><a href="#rozdzial-2"><span class="n">2</span><span>Użytkownicy i potrzeby</span></a></li>
+            <li><a href="#rozdzial-3"><span class="n">3</span><span>Luka rynkowa i propozycja wartości</span></a></li>
+            <li><a href="#rozdzial-4"><span class="n">4</span><span>Rozwiązanie i MVP</span></a></li>
+            <li><a href="#rozdzial-5"><span class="n">5</span><span>Product Backlog</span></a></li>
+            <li><a href="#rozdzial-6"><span class="n">6</span><span>Metryki, ryzyka i walidacja</span></a></li>
+            <li><a href="#rozdzial-7"><span class="n">7</span><span>Roadmapa</span></a></li>
+            <li><a href="#rozdzial-8"><span class="n">8</span><span>Czego się nauczyłem i co zrobiłbym inaczej</span></a></li>
+          </ol>
+        </div>
+      </nav>
+
+      <div class="cs-main">
+
+        <!-- GENEZA -->
+        <section class="chapter" id="geneza">
+          <div class="chapter-head"><h2 class="display">Geneza pomysłu</h2></div>
+          <p>Podczas pracy jako lektor języka angielskiego często występuje sytuacja, gdzie część poprawek podczas lekcji online wprowadzam na czacie wideo komunikatora, część ustnie, a część w pliku, na którym współpracuję z uczniem. Największy problem dotyczy jednak korekt ustnych, szczególnie w zakresie wymowy i słownictwa. Wprowadzam je na bieżąco na głos, aby naprowadzać ucznia na właściwy tor bez wybijania go z rytmu rozmowy i blokowania płynności. W efekcie większość tych cennych uwag bezpowrotnie ulatuje, ponieważ wyzwaniem jest jednocześnie aktywnie słuchać, prowadzić rozmowę i wszystko notować.</p>
+          <p>Przygotowanie rzetelnego podsumowania po każdych zajęciach wymaga zebrania poprawek ze wszystkich kanałów, co jest czasochłonne, a uwagi przekazane wyłącznie ustnie często zostają pominięte.</p>
+          <p>Ten proces ułatwiłoby narzędzie działające w tle, które automatycznie przechwytuje i kategoryzuje uwagi lektora (Grammar, Vocabulary, Speaking) i na koniec lekcji generuje jeden spójny dokument. Narzędzie mogłoby skrócić czas przygotowywania podsumowania przez nauczyciela oraz zapewnić uczniowi uporządkowany materiał do powtórek.</p>
+        </section>
+
+        <!-- 1 -->
+        <section class="chapter" id="rozdzial-1">
+          <div class="chapter-head"><span class="display no num">01</span><h2 class="display">Problem discovery i luka rynkowa</h2></div>
+
+          <h3>1.1 Punkty bólu i dotychczasowe dowody</h3>
+          <div class="table-wrap"><table class="xwide">
+            <thead><tr><th>Hipoteza</th><th>Dowody w literaturze</th><th>Pewność</th><th>Jak to sprawdzę</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">H1. Lektor gubi dużą część poprawek ustnych, więc przepadają</th><td>Brak bezpośrednich badań. Pośrednio: uczeń nie zapamiętuje korekty podanej w trakcie wypowiedzi (Nhac, 2022). Tło: recasty są najczęstszą formą korekt (Yuksel i in., 2023)</td><td class="c">Niska</td><td>Ankieta: ile z korekt ustnych zapisują lektorzy?</td></tr>
+              <tr><th scope="row">H2. Lektor nie jest w stanie jednocześnie prowadzić rozmowy i notować</th><td>Nauczyciel online przełącza się między mową, czatem i wspólnym dokumentem (Wigham i Satar, 2021); korekta w trakcie wypowiedzi rozprasza uczniów (Nhac, 2022)</td><td class="c">Niska</td><td>Ankieta</td></tr>
+              <tr><th scope="row">H3. Zbieranie uwag po lekcji jest czasochłonne</th><td>Niepłatna praca poza lekcją, w tym ok. 10 min raportu po 25-minutowej lekcji według jednej nauczycielki (TEFL Workers Union); autor sam ocenił większość czasu na feedback jako zmarnowaną (Barnes, 2023)</td><td class="c">Niska</td><td>Ankieta: ile minut po lekcji zajmuje podsumowanie</td></tr>
+              <tr><th scope="row">H4. Uczniowie często nie notują na zajęciach online</th><td>Morehead i in. (2019): 49% notuje na wykładach online vs 96% stacjonarnie; Jin i Webb (2025): 51% notowało, 33% zapisało słowa docelowe</td><td class="c">Średnia</td><td>Ankieta wśród lektorów: jaka część ich uczniów notuje poprawki (pomiar pośredni)</td></tr>
+            </tbody>
+          </table></div>
+
+          <h4>Źródła i ich wyjaśnienie</h4>
+          <div class="sources">
+            <div class="card">
+              <h4>Yuksel, Soruç i McKinley (2023), IRAL 61(2), 387–414</h4>
+              <p><strong>Co zbadano:</strong> 51 doświadczonych nauczycieli EFL na uczelniach. Porównano ich deklaracje o korekcie z tym, co faktycznie robili na lekcjach.</p>
+              <p><strong>Wynik:</strong> w ankiecie oceniali korektę natychmiastową i odroczoną jako równie ważne, a w klasie 66% korekt było natychmiastowych, 34% odroczonych. Deklaracje o momencie korekty nie pokrywały się z praktyką.</p>
+              <p class="muted"><strong>Ograniczenia:</strong> nauczyciele uniwersyteccy, nie lektorzy indywidualni. Liczba 66% dotyczy momentu korekty, nie jej ulotności.</p>
+            </div>
+            <div class="card">
+              <h4>Nhac (2022), European Journal of Educational Research 11(3), 1643–1655</h4>
+              <p><strong>Kogo zbadano:</strong> ankieta przeprowadzona na 425 studentach, wywiady z 13 nauczycielami.</p>
+              <p><strong>Wynik:</strong> nauczyciele przyznali, że często korygują odruchowo, głównie recastami (szybkimi przekształceniami), bo nie zabierają czasu. Uczeń z wywiadu powiedział, że przy korekcie w trakcie wypowiedzi powtarza poprawną formę machinalnie i od razu zapomina. Uczniowie woleli korektę po zadaniu, ale błędy zmieniające znaczenie chcieli poprawiać od razu.</p>
+              <p class="muted"><strong>Ograniczenia:</strong> Wietnam, uczelnia prawnicza, deklaracje.</p>
+            </div>
+            <div class="card">
+              <h4>Anugrah, Friatin i Sugiarto (2024), Jurnal Wahana Pendidikan 11(2), 251–262</h4>
+              <p><strong>Kogo zbadano:</strong> jeden nauczyciel i czterech uczniów szkoły zawodowej.</p>
+              <p><strong>Wynik:</strong> nauczyciel stosował recast, korektę wprost i powtórzenie, głównie dla wymowy i przyimków. Z powodu problemów z łączem używał czatu, tablicy i WhatsAppa.</p>
+              <p class="muted"><strong>Ograniczenia:</strong> jeden nauczyciel. Transkrypty to dialogi odgrywane przez uczniów, nie spontaniczna rozmowa.</p>
+            </div>
+            <div class="card">
+              <h4>TEFL Workers Union, „The real cost of teaching online for the British Council”</h4>
+              <p><a href="https://teflworkersunion.org/the-real-cost-of-teaching-online-for-the-british-council/" rel="noopener">teflworkersunion.org</a></p>
+              <p>Tekst związku nauczycieli, w którym członkowie szacują swoją rzeczywistą stawkę po doliczeniu niepłatnej pracy.</p>
+              <p><strong>Treść:</strong> według jednej nauczycielki 10 minut przygotowania i 10 minut pisania raportu przypada na 25-minutową lekcję prywatną (realna stawka spada z 15 do 9,60 funta za godzinę).</p>
+              <p class="muted"><strong>Ograniczenia:</strong> szacunki.</p>
+            </div>
+            <div class="card">
+              <h4>Morehead, Dunlosky, Rawson, Blasiman i Hollis (2019), Memory</h4>
+              <p><strong>Kogo i co zbadano:</strong> ankieta 577 studentów Kent State University o nawykach notowania na zajęciach stacjonarnych i online.</p>
+              <p><strong>Wynik:</strong> 96% notuje na zajęciach stacjonarnych, 49% na wykładach online. Najczęstszy powód braku notatek online: materiał jest dostępny w sieci (67%). 67% przyznaje, że notowanie czasem przeszkadza w zrozumieniu wykładu. 52% nigdy nie uczono notowania.</p>
+              <p class="muted"><strong>Ograniczenia:</strong> studenci zaliczający udział w badaniu (głównie z zajęć z psychologii). Nie dotyczy korekt językowych.</p>
+            </div>
+            <div class="card">
+              <h4>Barnes (2023), Technology in Language Teaching &amp; Learning 5(2), 37–58</h4>
+              <p><strong>Co zbadano:</strong> 15-tygodniowy semestr na japońskim uniwersytecie (61 studentek). Dwie grupy dostawały w Moodle korektę pisemną z wyjaśnieniem metajęzykowym, grupa kontrolna ogólne komentarze. Feedback miał być przeczytany w domu, a logi Moodle pokazywały, kto go faktycznie otwierał.</p>
+              <p><strong>Wynik:</strong> brak istotnych różnic w poprawności między grupami. Z 19 osób, które ukończyły zadania w grupach korygowanych, tylko 6 sprawdzało feedback co tydzień, o cztery mniej, niż deklarowało, że go czyta. Autor oszacował czas na feedback na ok. 10 godzin tygodniowo.</p>
+              <p class="muted"><strong>Ograniczenia:</strong> dotyczy korekt pisemnych, nie ustnych ani podsumowań lekcji.</p>
+            </div>
+            <div class="card">
+              <h4>Jin i Webb (2025), Language Teaching Research 29(2), 560–587</h4>
+              <p><strong>Kogo i co zbadano:</strong> 86 studentów anglistyki z uniwersytetu w Chinach obejrzało w klasie nagranie wykładu nauczyciela (26 min, w segmentach, z pytaniami nauczyciela). Notowanie było dobrowolne, a uczestnicy nie wiedzieli, że notatki zostaną sprawdzone.</p>
+              <p><strong>Wynik:</strong> notowało 51,2% (44 osoby), a informacje o słowach docelowych zapisało 32,6% (28 osób). Dla słów zapisanych w notatkach szanse na poprawną odpowiedź były ok. 15 razy większe w teście natychmiastowym i ok. 10 razy w odroczonym (analiza na poziomie słów).</p>
+              <p class="muted"><strong>Ograniczenia:</strong> nie dotyczy zajęć online.</p>
+            </div>
+            <div class="card">
+              <h4>Wigham i Satar (2021), ReCALL 33(3), 195–213</h4>
+              <p><strong>Co zbadano:</strong> studium przypadku jednej doświadczonej nauczycielki języka uczącej przez wideokonferencję, analiza tego, jak wydaje polecenia do zadań.</p>
+              <p><strong>Wynik:</strong> nauczycielka łączyła mowę z tekstem pisanym (wspólny dokument, czat, linki) i często przełączała się między tymi zasobami, np. kopiowała link z dokumentu i wysyłała go na czacie.</p>
+              <p class="muted"><strong>Ograniczenia:</strong> jedna nauczycielka; dotyczy instrukcji do zadań, a nie korekty błędów.</p>
+            </div>
+          </div>
+
+          <h3>1.2 Kontekst rynku</h3>
+          <p><strong>Rynek globalny.</strong> Według Meticulous Research (raport z marca 2026) rynek nauki języków online był wart 15,8 mld USD w 2025 r. i ma osiągnąć 50,6 mld USD do 2036 r. (CAGR 11,1%). Osobny raport tej firmy (styczeń 2025) szacuje, że segment korepetycji językowych online osiągnie 12,7 mld USD do 2032 r. (CAGR 20,2%). Największy udział mają w nim lekcje indywidualne i język angielski, czyli model pracy typowy dla niezależnych lektorów. Szacunki różnią się między raportami i firmami badawczymi, więc traktuję je jako tło, a nie wielkość mojego rynku.</p>
+          <p><strong>Polska.</strong> Nie znalazłem danych o liczbie niezależnych lektorów prowadzących lekcje online. Według danych platformy BUKI, przytoczonych w materiale partnerskim na PAP MediaRoom (listopad 2025), język angielski to 35% zapytań o korepetycje, a niemiecki 8%. Według CBOS ok. 80% rodziców płaci za dodatkowe zajęcia dzieci, średnio blisko 950 zł miesięcznie (kwota obejmuje też np. zajęcia sportowe).</p>
+          <div class="callout"><p><strong>Co z tego wynika dla WrapItUp:</strong> rynek, na którym działają lektorzy, jest duży i rośnie, ale nie wiem, ilu lektorów w Polsce mogłoby z narzędzia korzystać ani ile zapłaci. Gotowość do płacenia sprawdzę w teście T5.</p></div>
+          <p class="table-note">Źródła: <a href="https://meticulousresearch.com/reports/online-language-learning-market-5025" rel="noopener">Meticulous Research (2026), Online Language Learning Market</a> · <a href="https://www.meticulousresearch.com/product/online-language-tutoring-market-5691" rel="noopener">Meticulous Research (2025), Online Language Tutoring Market</a> · <a href="https://www.pap.pl/mediaroom/rynek-korepetycji-w-polsce-2025-najpopularniejsze-platformy-skala-zjawiska-i-najczesciej" rel="noopener">PAP MediaRoom (2025), Rynek korepetycji w Polsce 2025 (dane BUKI i CBOS)</a></p>
+
+          <h3>1.2.1 Konkurencja</h3>
+          <div class="table-wrap"><table class="xwide">
+            <thead><tr><th>Rozwiązanie</th><th>Dla kogo?</th><th>Co generuje?</th><th>Wyodrębnia korekty lektora?</th><th>Działa poza własną platformą?</th><th>Lektor zatwierdza szkic?</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Live English Smart Reports</th><td>Uczniowie i nauczyciele szkoły Live English</td><td>Wnioski, słownictwo, korekty, uwagi o płynności, plan działania. AI szkicuje, nauczyciel zatwierdza</td><td>Jest sekcja „Corrections”, ale brak informacji o źródle (głos, czat, plik)</td><td>Nie</td><td>Tak</td></tr>
+              <tr><th scope="row">Lessonspace Lesson Summaries</th><td>Korepetytorzy używający Lessonspace</td><td>Ok. 300-słowne podsumowanie nagranej lekcji i sugerowane kolejne kroki</td><td>Nie: opisuje „problem areas”, pomija obserwacje o wynikach ucznia</td><td>Nie</td><td>Nie podano</td></tr>
+              <tr><th scope="row">Preply, Lesson Insights</th><td>Uczący się na Preply (włączyć może lektor lub uczeń)</td><td>Podsumowanie lekcji, feedback dla ucznia, czas mówienia, słownictwo</td><td>Nie wiadomo: brak wzmianki o korektach lektora</td><td>Nie</td><td>Nie podano</td></tr>
+              <tr><th scope="row">italki Plus, Lesson Summary</th><td>Uczący się na italki (subskrypcja ucznia)</td><td>Gramatyka, słownictwo, idiomy, ćwiczenia, fiszki</td><td>Wzmianka o „error corrections”</td><td>Nie</td><td>Nie podano</td></tr>
+              <tr><th scope="row">Audilingua</th><td>Lektorzy i uczący się</td><td>Listy słownictwa, notatki gramatyczne, ćwiczenia, transkrypcja, podsumowanie</td><td>Nie wiadomo</td><td>Tak wg opisu: nagranie dowolnej lekcji</td><td>Nie podano</td></tr>
+              <tr><th scope="row">Speak English AI Tutor</th><td>Uczący się, który nagrywa lekcję z lektorem</td><td>Błędy, słownictwo, ćwiczenia</td><td>Nie wiadomo: analizuje mowę ucznia</td><td>Tak</td><td>Nie podano</td></tr>
+              <tr><th scope="row">Zoom AI Companion</th><td>Użytkownicy płatnych planów Zoom</td><td>Ogólne podsumowanie spotkania</td><td>Nie</td><td>Tak wg producenta (Zoom, Teams, Meet)</td><td>Tak</td></tr>
+              <tr><th scope="row">Otter</th><td>Dla biznesu, zespołów projektowych</td><td>Transkrypcja na żywo, notatki AI</td><td>Nie</td><td>Tak</td><td>Nie podano</td></tr>
+            </tbody>
+          </table></div>
+          <p class="table-note">Tabela opiera się na opisach producentów. Żadnego z tych produktów nie testowałem, więc część funkcji może działać inaczej, niż wynika z opisów.</p>
+          <p>Konkurencja jest silna, ale to też sygnał. Duże platformy językowe (Preply, italki, Live English) budują już podsumowania lekcji z pomocą AI, a ogólne narzędzia do notatek ze spotkań (Zoom AI Companion, Otter) mają płatne plany. Firmy inwestują więc w automatyczne podsumowania, a część użytkowników płaci za notatki ze spotkań. Nie oznacza to jednak, że lektorzy zapłacą za narzędzie do zbierania własnych poprawek. To osobna potrzeba i osobny rynek, a gotowość do płacenia sprawdzę w teście T5.</p>
+          <p>Nie znalazłem narzędzia, które jednocześnie:</p>
+          <ol>
+            <li>działa poza własną platformą (na Google Meet i Teams),</li>
+            <li>łączy poprawki ustne lektora z poprawkami ze wspólnego dokumentu,</li>
+            <li>daje lektorowi zatwierdzenie szkicu przed wysłaniem do ucznia.</li>
+          </ol>
+
+          <h3>1.3 Podsumowanie</h3>
+          <p>Niezależni lektorzy online korygują uczniów głównie na bieżąco i ustnie, a po lekcji muszą ręcznie zebrać uwagi z kilku miejsc (głos, czat, wspólny plik). Literatura potwierdza kontekst: korekty ustne są częste i udzielane w trakcie rozmowy, a uczniowie często nie notują. Nie mierzy ona jednak czasu, który lektorzy tracą na podsumowania, więc traktuję to jako hipotezę do sprawdzenia. Istniejące rozwiązania są wbudowane w platformy (Preply, italki, Live English, Lessonspace) albo ogólne (Zoom AI, Otter). Nie znalazłem narzędzia niezależnego od platformy, które zbiera korekty lektora w jedno podsumowanie zatwierdzane przez niego.</p>
+        </section>
+
+        <!-- 2 -->
+        <section class="chapter" id="rozdzial-2">
+          <div class="chapter-head"><span class="display no num">02</span><h2 class="display">Użytkownicy i potrzeby</h2></div>
+          <p>Przeprowadziłem anonimową ankietę online wśród lektorów języków obcych, którzy prowadzą indywidualne lub grupowe lekcje online (17 pytań, ok. 6 minut). Respondenci zostali dobrani metodą kuli śnieżnej. Finalnie zebrałem 16 odpowiedzi. Jedną wyłączyłem, bo respondent nie prowadzi lekcji online. Próba jest mała i nielosowa, więc traktuję wyniki jako sygnał do dalszej weryfikacji, a nie dowód.</p>
+
+          <h4>Wyniki względem hipotez</h4>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Hipoteza</th><th>Próg</th><th>Wynik</th><th>Werdykt</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">H1. Lektor gubi dużą część poprawek ustnych</th><td>≥ 50% „około połowy” lub mniej</td><td class="c">5 z 15 (33%)</td><td><span class="pill pill-no">Niepotwierdzona</span></td></tr>
+              <tr><th scope="row">H2. Trudno jednocześnie mówić i notować</th><td>≥ 50% odpowiada 4–5</td><td class="c">5 z 15 (33%)</td><td><span class="pill pill-no">Niepotwierdzona</span></td></tr>
+              <tr><th scope="row">H3. Przygotowanie podsumowania zajmuje dużo czasu</th><td>≥ 50% podaje 11+ min</td><td class="c">7 z 15 (47%)</td><td><span class="pill pill-mid">Graniczna</span> <span class="muted small">do progu zabrakło 1 osoby</span></td></tr>
+              <tr><th scope="row">H4. Uczniowie często sami nie notują</th><td>≥ 50% „mniej niż połowa” lub mniej</td><td class="c">9 z 15 (60%)</td><td><span class="pill pill-yes">Potwierdzona</span></td></tr>
+              <tr><th scope="row">Zainteresowanie narzędziem</th><td>≥ 50% odpowiada 4–5</td><td class="c">9 z 15 (60%)</td><td><span class="pill pill-yes">Potwierdzone</span></td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout"><p><strong>Uwaga do H1:</strong> poprawki ustne giną, ale w małej skali. Tylko 2 z 15 lektorów zapisuje wszystkie (Q5), a 10 z 15 przyznaje, że część uwag ustnych nie trafia do notatek (Q6b). Problem istnieje, ale jest za mały, żeby budować narzędzie wokół odzyskiwania zgubionych poprawek.</p></div>
+
+          <h4>Pełne rozkłady odpowiedzi (n = 15)</h4>
+          <dl class="qlist">
+            <div><dt>Q2</dt><dd>Lekcji tygodniowo: do 5: 5 · 6–10: 3 · 11–20: 6 · ponad 20: 1</dd></div>
+            <div><dt>Q3</dt><dd>Gdzie prowadzą lekcje: Google Meet 11 · MS Teams 9 · Zoom 4 · platforma szkoły 2 · Skype 1 · Preply/italki 0</dd></div>
+            <div><dt>Q4</dt><dd>Poprawki „często” lub „zawsze”: we wspólnym dokumencie 12 · ustnie po wypowiedzi 11 · ustnie w trakcie wypowiedzi 4 · na czacie 0</dd></div>
+            <div><dt>Q5</dt><dd>Część poprawek ustnych w notatkach: mniej niż połowa 1 · około połowy 4 · większość 8 · wszystkie 2</dd></div>
+            <div><dt>Q6a</dt><dd>„Trudno mi jednocześnie mówić i notować” (skala 1–5): 1: 0 · 2: 5 · 3: 5 · 4: 4 · 5: 1 (średnia 3,07)</dd></div>
+            <div><dt>Q6b</dt><dd>„Część uwag ustnych nie trafia do notatek”: 2: 2 · 3: 3 · 4: 9 · 5: 1 (średnia 3,60)</dd></div>
+            <div><dt>Q7</dt><dd>Jak zapamiętują poprawki: notuję w trakcie 14 · notuję po lekcji z pamięci 5 · uczniowie sami notują 4 · transkrypcja/AI 3 · nagrywam i odsłuchuję 1</dd></div>
+            <div><dt>Q8</dt><dd>Podsumowanie po lekcji: po każdej 11 · po większości 4 · czasem i nigdy 0</dd></div>
+            <div><dt>Q9</dt><dd>Czas przygotowania: do 5 min 2 · 6–10 min 6 · 11–20 min 7 (mediana: 6–10 min)</dd></div>
+            <div><dt>Q10</dt><dd>Najbardziej uciążliwe (do 2 odpowiedzi): zbieranie uwag z kilku miejsc 13 · formatowanie i wysyłanie 9 · wymyślanie ćwiczeń 3 · przypominanie sobie 3</dd></div>
+            <div><dt>Q11</dt><dd>Jaka część uczniów notuje: prawie żaden 2 · mniej niż połowa 7 · około połowy 4 · nie wiem 2</dd></div>
+            <div><dt>Q12</dt><dd>Uczniowie wracają do notatek: prawie nigdy 2 · rzadko 6 · czasem 4 · często 3</dd></div>
+            <div><dt>Q13</dt><dd>Co używają dziś: ChatGPT/AI ręcznie 10 · własne szablony 5 · nic 4 · Zoom AI 2</dd></div>
+            <div><dt>Q14</dt><dd>Płacą za narzędzie: nie 3 · do 50 zł 2 · 50–100 zł 7 · ponad 100 zł 3</dd></div>
+            <div><dt>Q15</dt><dd>Przydatność narzędzia (1–5): 1: 1 · 2: 1 · 3: 4 · 4: 6 · 5: 3 (średnia 3,60)</dd></div>
+            <div><dt>Q16</dt><dd>Co zniechęca (do 2 odpowiedzi): jakość rozpoznawania 9 · zgoda ucznia/RODO 8 · poprawianie szkicu 6 · cena 5 · konfiguracja 1</dd></div>
+          </dl>
+
+          <h3>2.1 Najważniejsze wnioski</h3>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Wniosek</th><th>Dowód</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Ustne poprawki zwykle trafiają do notatek</th><td>10 z 15: „większość” lub „wszystkie” (Q5); 14 z 15 notuje uwagi w trakcie lekcji (Q7)</td></tr>
+              <tr><th scope="row">Część poprawek ustnych mimo wszystko ucieka</th><td>10 z 15 zgadza się, że zdarza się, że uwagi ustne nie trafiają do notatek (Q6b)</td></tr>
+              <tr class="is-key"><th scope="row">Główny ból to składanie uwag z kilku miejsc</th><td>13 z 15 (Q10); 10 z 15 robi to ręcznie przez ChatGPT (Q13)</td></tr>
+              <tr><th scope="row">Podsumowanie zajmuje realny czas</th><td>Mediana 6–10 min, 7 z 15 podaje 11–20 min (Q9)</td></tr>
+              <tr><th scope="row">Efekt po stronie ucznia jest słaby</th><td>9 z 15: mniej niż połowa uczniów notuje poprawki (Q11); 8 z 15: uczniowie rzadko wracają do notatek (Q12)</td></tr>
+              <tr><th scope="row">Zainteresowanie jest umiarkowane, nie entuzjastyczne</th><td>9 z 15 odpowiada 4–5, średnia 3,60 (Q15)</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>2.2 Przykładowa persona</h3>
+          <div class="table-wrap"><table class="wide">
+            <tbody>
+              <tr><th scope="row">Kontekst</th><td>Marcin prowadzi lekcje indywidualne lub grupowe przez Google Meet lub Teams, 11–20 lekcji tygodniowo (6 z 15)</td></tr>
+              <tr><th scope="row">Jak pracuje</th><td>Notuje w trakcie lekcji (14 z 15), poprawia głównie we wspólnym dokumencie i ustnie po wypowiedzi ucznia. Podsumowanie wysyła po każdej lekcji (11 z 15)</td></tr>
+              <tr><th scope="row">Co robi dziś</th><td>Składa uwagi z dokumentu i własnych notatek, często z pomocą narzędzia AI (10 z 15)</td></tr>
+              <tr><th scope="row">Frustracje</th><td>Musi zebrać uwagi z kilku kanałów (13 z 15), formatowanie i wysyłanie (9 z 15); uczniowie rzadko wracają do notatek (8 z 15)</td></tr>
+              <tr><th scope="row">Obawy wobec narzędzia</th><td>Obawia się jakości rozpoznania uwag przez narzędzie (9 z 15), konieczności zebrania zgody ucznia i RODO (8 z 15) oraz konieczności poprawiania szkicu (6 z 15)</td></tr>
+              <tr><th scope="row">Czego potrzebuje</th><td>Szkicu podsumowania złożonego z jego własnych poprawek, który może szybko sprawdzić i zatwierdzić, bez przepisywania uwag z kilku miejsc</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>2.3 Mapa ścieżki lektora</h3>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Etap</th><th>Co robi lektor</th><th>Ból</th><th>Dowód</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">1. Przed lekcją</th><td>Przygotowuje się do lekcji, zbierając materiały</td><td>Nie badane w ankiecie</td><td>Brak danych</td></tr>
+              <tr><th scope="row">2. W trakcie lekcji</th><td>Poprawia ustnie i we wspólnym dokumencie, notuje na bieżąco</td><td>Uwagi rozproszone między głosem, dokumentem i notatkami</td><td>Q4, Q7</td></tr>
+              <tr><th scope="row">3. Tuż po lekcji</th><td>Uzupełnia z pamięci to, co nie trafiło do notatek</td><td>Część uwag może uciekać</td><td>5 z 15 notuje z pamięci (Q7); Q6b</td></tr>
+              <tr class="is-key"><th scope="row">4. Składanie podsumowania</th><td>Zbiera uwagi z kilku miejsc, redaguje, często z pomocą ChatGPT</td><td><strong>Najbardziej uciążliwy etap</strong>, 6–20 min</td><td>Q10, Q9, Q13</td></tr>
+              <tr><th scope="row">5. Wysłanie</th><td>Formatuje i wysyła uczniowi</td><td>Powtarzalna, ręczna praca</td><td>Q10 (9 z 15)</td></tr>
+              <tr><th scope="row">6. Po stronie ucznia</th><td>Uczeń czyta lub nie czyta</td><td>Niska wartość: uczniowie rzadko wracają</td><td>Q11, Q12</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>2.4 Decyzja po ankiecie</h3>
+          <div class="callout is-coral">
+            <p class="lead">Kontynuuję projekt z zawężonym zakresem.</p>
+            <ul>
+              <li>Pierwotna teza (lektorzy gubią dużą część poprawek ustnych) <mark>nie została potwierdzona</mark>. Większość lektorów zapisuje większość poprawek (H1), a jednoczesne mówienie i notowanie sprawia trudność tylko co trzeciej osobie (H2). Straty istnieją, ale są niewielkie (Q6b).</li>
+              <li>Wsparciem dla dalszej pracy są: potwierdzone zainteresowanie (60%), graniczny czas (H3) i bardzo częste wskazanie zbierania uwag z kilku miejsc (13 z 15).</li>
+            </ul>
+          </div>
+          <div class="block scallop"><p><strong>Nowa teza problemu:</strong> lektor spędza po każdej lekcji kilka–kilkanaście minut na składaniu uwag z kilku kanałów (głos, wspólny dokument, notatki) w jedno podsumowanie.</p></div>
+          <ul>
+            <li><strong>Wpływ na MVP:</strong> priorytetem jest automatyczne składanie poprawek z dwóch głównych kanałów, czyli wspólnego dokumentu (12 z 15) i poprawek ustnych po wypowiedzi ucznia (11 z 15), w jeden szkic. Dźwięk lekcji jest potrzebny, bo bez niego poprawki ustne trzeba przepisywać ręcznie. Służy jednak do zbierania poprawek, a nie do ratowania zgubionych. Wykrywanie poprawek, których lektor nie zanotował, przechodzi do Won’t (H1 i H2 niepotwierdzone). Czat zostaje źródłem dodatkowym (Should), bo nikt nie poprawia na nim często.</li>
+            <li><strong>Poza zakresem MVP: zaangażowanie ucznia.</strong> Według lektorów uczniowie rzadko wracają do notatek (8 z 15, Q12), a mniej niż połowa sama notuje poprawki (9 z 15, Q11). To jednak opinia lektorów, a nie dane od uczniów. Traktuję to jako osobną hipotezę <strong>H5: uczniowie rzadko wracają do podsumowań lekcji, więc ich wartość dla nauki jest ograniczona.</strong> Nie buduję pod nią funkcji w MVP, bo jego użytkownikiem jest lektor. H5 sprawdzę w pilotażu (T6), a od wyniku zależy, czy rozwijać produkt w stronę ucznia (Later).</li>
+          </ul>
+
+          <h3>2.5 Ograniczenia</h3>
+          <ul>
+            <li>Próba jest mała (n = 15) i nielosowa.</li>
+            <li>Badanie nie obejmuje lektorów z Preply ani italki.</li>
+            <li>Pytanie o płatności nie odróżnia narzędzia lektorskiego od abonamentu na AI.</li>
+            <li>H4 mierzy opinię lektorów o uczniach, a nie zachowanie samych uczniów.</li>
+          </ul>
+        </section>
+
+        <!-- 3 -->
+        <section class="chapter" id="rozdzial-3">
+          <div class="chapter-head"><span class="display no num">03</span><h2 class="display">Luka rynkowa i propozycja wartości</h2></div>
+          <h3>3.1 Luka i wyróżnik</h3>
+          <p>Cztery z rozwiązań z podrozdziału 1.2.1 (Preply, italki, Lessonspace, Live English) działają według opisów producentów w ramach własnej platformy. W ankiecie nikt z 15 osób nie uczy przez Preply ani italki, a lekcje prowadzą głównie przez Meet (11 z 15) i Teams (9 z 15). Dla tej grupy zostają narzędzia działające poza platformą: ogólne notatniki spotkań (Zoom AI Companion, Otter) i najbliższy konkurent, Audilingua.</p>
+          <p>Nie znalazłem narzędzia, które:</p>
+          <ol>
+            <li>działa poza własną platformą, na Meet i Teams,</li>
+            <li>łączy poprawki ustne ze wspólnym dokumentem w jeden szkic,</li>
+            <li>oddaje lektorowi zatwierdzenie przed wysłaniem do ucznia.</li>
+          </ol>
+          <p>Punkt 1 spełniają Audilingua, Zoom AI Companion i Otter. Zoom pozwala edytować notatki, ale żadne z tych narzędzi nie podaje na stronie nic o punkcie 2. Punkt 1 spełnia też Speak English AI Tutor, ale korzysta z niego uczeń i narzędzie analizuje mowę ucznia, a nie poprawki lektora. Nie jest więc bezpośrednią alternatywą dla lektora. O punkcie 3 nic nie podają też Audilingua i Otter. Jeśli to się zmieni, luka się zmniejszy. Wyróżnikiem WrapItUp jest połączenie tych trzech rzeczy w narzędziu zbudowanym dla lektora.</p>
+
+          <h3>3.2 Propozycja wartości</h3>
+          <div class="callout"><p>WrapItUp jest narzędziem dla niezależnych lektorów języków obcych, którzy prowadzą zajęcia online i po każdej lekcji tracą czas na ręczne podsumowanie i zbieranie rozproszonych uwag. WrapItUp wychwytuje poprawki ustne, uwagi ze wspólnego dokumentu i czatu komunikatora, a potem przygotowuje szkic podsumowania z podziałem na gramatykę, słownictwo i mówienie. Lektor tylko sprawdza go i zatwierdza, zamiast składać podsumowanie od zera.</p></div>
+        </section>
+
+        <!-- 4 -->
+        <section class="chapter" id="rozdzial-4">
+          <div class="chapter-head"><span class="display no num">04</span><h2 class="display">Rozwiązanie i MVP</h2></div>
+          <h3>4.1 Zakres MVP (MoSCoW)</h3>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Priorytet</th><th>Funkcja</th><th>Uzasadnienie</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Odczyt poprawek ze wspólnego dokumentu</th><td>Najczęstszy kanał poprawek: 12 z 15 (Q4)</td></tr>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Szkic łączący źródła, bez duplikatów</th><td>Główny ból to składanie uwag z kilku miejsc: 13 z 15 (Q10). Ta sama poprawka powiedziana i wpisana do dokumentu ma być jedną pozycją</td></tr>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Przegląd, edycja i zatwierdzenie szkicu przez lektora</th><td>Lektor decyduje, co trafia do ucznia. 6 z 15 obawia się poprawiania szkicu (Q16), więc szkic ma być krótki i łatwy do edycji</td></tr>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Potwierdzenie zgody ucznia przed przechwytywaniem</th><td>Zgoda i RODO: 8 z 15 (Q16)</td></tr>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Podsumowanie w formie PDF do pobrania</th><td>Bez wyjścia szkic nie ma wartości. Formatowanie i wysyłanie uciążliwe dla 9 z 15 (Q10)</td></tr>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Przechwycenie dźwięku lekcji i zamiana na tekst</th><td>Drugi główny kanał: 11 z 15 poprawia ustnie po wypowiedzi (Q4). Bez tego lektor przepisuje te poprawki ręcznie</td></tr>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Podział na gramatykę, słownictwo i mówienie</th><td>Szkic jest czytelniejszy (prototyp, 4.6)</td></tr>
+              <tr><td><span class="pill pill-must">Must</span></td><th scope="row">Konto lektora i pierwsze uruchomienie</th><td>Bez konta nie ma gdzie przechowywać zgód i szkiców</td></tr>
+              <tr><td><span class="pill pill-should">Should</span></td><th scope="row">Czat komunikatora jako źródło</th><td>W propozycji wartości, ale to najrzadszy kanał: nikt z 15 nie poprawia na nim często (Q4)</td></tr>
+              <tr><td><span class="pill pill-should">Should</span></td><th scope="row">Wgranie nagrania po lekcji</th><td>Rozwiązanie zapasowe dla lektorów, u których przechwycenie nie działa</td></tr>
+              <tr><td><span class="pill pill-could">Could</span></td><th scope="row">Wysyłka podsumowania do ucznia z poziomu narzędzia</th><td>Na start wystarczy PDF i kopiowanie tekstu</td></tr>
+              <tr><td><span class="pill pill-could">Could</span></td><th scope="row">Kopiowanie podsumowania jako zwykły tekst</th><td>Najprostsza alternatywa dla PDF. Formatowanie i wysyłanie jest uciążliwe dla 9 z 15 (Q10)</td></tr>
+              <tr><td><span class="pill pill-could">Could</span></td><th scope="row">Informacja dla ucznia na czacie spotkania</th><td>Na początku lekcji narzędzie wysyła na czat spotkania krótką informację, że lekcja jest nagrywana. Wspiera jawność, ale nie zastępuje zgody (8 z 15, Q16)</td></tr>
+              <tr><td><span class="pill pill-wont">Won’t (teraz)</span></td><th scope="row">Wykrywanie poprawek, które lektor pominął</th><td>Hipoteza H1 niepotwierdzona</td></tr>
+              <tr><td><span class="pill pill-wont">Won’t (teraz)</span></td><th scope="row">Generowanie ćwiczeń</th><td>Uciążliwe dla 3 z 15 (Q10)</td></tr>
+              <tr><td><span class="pill pill-wont">Won’t (teraz)</span></td><th scope="row">Zoom, aplikacje desktopowe</th><td>Poza zakresem MVP (rozszerzenie Chrome). Aplikacja desktopowa wraca, jeśli T4 pokaże, że większość lektorów jej używa (6.4)</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>4.2 Jak WrapItUp będzie działać</h3>
+          <ol class="steps">
+            <li><div><strong>Przed lekcją.</strong> Lektor wybiera ucznia i wskazuje jego wspólny dokument. Przy pierwszej lekcji z danym uczniem potwierdza, że uzyskał jego zgodę (lub zgodę rodzica). Bez tego potwierdzenia nagrywanie się nie uruchamia.</div></li>
+            <li><div><strong>W trakcie lekcji.</strong> Narzędzie przechwytuje dźwięk i przetwarza go na tekst.</div></li>
+            <li><div><strong>Po lekcji.</strong> Narzędzie odczytuje poprawki ze wspólnego dokumentu, łączy je z poprawkami z transkrypcji, usuwa duplikaty i tworzy szkic z podziałem na gramatykę, słownictwo i mówienie. Każda pozycja ma oznaczone źródło (głos / dokument).</div></li>
+            <li><div><strong>Zatwierdzenie.</strong> Lektor sprawdza szkic, poprawia i zatwierdza.</div></li>
+            <li><div><strong>Wysłanie.</strong> Lektor otrzymuje gotowy plik PDF i wysyła go uczniowi.</div></li>
+          </ol>
+
+          <h3>4.3 Forma i platformy</h3>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Opcja</th><th>Zasięg</th><th>Ryzyko</th></tr></thead>
+            <tbody>
+              <tr class="is-key"><th scope="row">Rozszerzenie do Chrome</th><td>Meet w przeglądarce, Teams w wersji webowej</td><td>Pomija lektorów z aplikacją desktopową</td></tr>
+              <tr><th scope="row">Aplikacja desktopowa</th><td>Każdy komunikator</td><td>Przechwytywanie dźwięku systemowego trudniejsze, instalacja to większa bariera</td></tr>
+              <tr><th scope="row">Wgranie nagrania lub transkrypcji po lekcji</th><td>Niezależne od komunikatora</td><td>Dodatkowy krok po lekcji zmniejsza oszczędność czasu</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout">
+            <p class="lead">Decyzja: MVP to rozszerzenie do Chrome, na Google Meet i Teams.</p>
+            <ul>
+              <li>Meet wskazało 11 z 15 lektorów, a Teams 9 z 15 (Q3).</li>
+              <li>To odpowiada pierwotnemu pomysłowi i jest najtańsze do sprawdzenia. Audilingua oferuje nagrywanie audio z karty przeglądarki, co sugeruje wykonalność, ale technicznie tego nie sprawdzałem.</li>
+              <li>Ograniczenie: lektorzy z aplikacją desktopową Teams zostają poza zakresem MVP. Ankieta nie pytała o przeglądarkę lub aplikację, więc to założenie trafia do planu walidacji (rozdział 6).</li>
+            </ul>
+          </div>
+
+          <h3>4.4 Kwestie zgody i prywatności</h3>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Zasada</th><th>Jak to uwzględnić w MVP</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Zgoda przed startem</th><td>Lektor zbiera zgodę poza narzędziem i potwierdza ją w WrapItUp raz dla każdego ucznia, przed pierwszym nagraniem. Bez potwierdzenia nagrywanie się nie uruchamia.</td></tr>
+              <tr><th scope="row">Wsparcie dla lektora</th><td>WrapItUp dostarcza gotowy wzór tekstu zgody (do wysłania uczniowi lub dopisania do umowy) i zapisuje datę potwierdzenia.</td></tr>
+              <tr><th scope="row">Jawność</th><td>Uczeń wie o nagrywaniu i przetwarzaniu dźwięku dzięki wyrażonej zgodzie.</td></tr>
+              <tr><th scope="row">Minimum danych</th><td>Dźwięk jest zamieniany na tekst, a nagranie usuwane po zatwierdzeniu szkicu, najpóźniej po 7 dniach (założenie do konsultacji prawnej).</td></tr>
+              <tr><th scope="row">Usunięcie danych</th><td>Lektor może usunąć dane z lekcji na prośbę ucznia.</td></tr>
+              <tr><th scope="row">Decyzja po stronie lektora</th><td>Nic nie trafia do ucznia bez zatwierdzenia.</td></tr>
+              <tr><th scope="row">Co przechowuje konto</th><td>Datę potwierdzenia zgody, transkrypcję i szkic do czasu zatwierdzenia oraz zatwierdzone podsumowanie.</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>4.5 Prototyp</h3>
+          <p><strong>Cel:</strong> sprawdzić, czy model językowy przygotuje użyteczny szkic podsumowania z zapisu lekcji. Test objął streszczanie i kategoryzowanie, ale nie rozpoznawanie mowy ani odczyt wspólnego dokumentu.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Co mierzę</th><th>Jak</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">N: poprawki lektora w zapisie</th><td>Liczyłem sam z tekstu przed testem, bez potwierdzeń poprawnych wypowiedzi</td></tr>
+              <tr><th scope="row">Wychwycone</th><td>x z N</td></tr>
+              <tr><th scope="row">Zapisane poprawnie</th><td>x z N; pozycja oddaje poprawkę bez zniekształceń</td></tr>
+              <tr><th scope="row">Pozycje nadmiarowe</th><td>Pozycje, które nie są poprawkami lektora (potwierdzenia, zmyślone)</td></tr>
+              <tr><th scope="row">Nadmiarowe oznaczone „do sprawdzenia”</th><td>x z liczby nadmiarowych</td></tr>
+              <tr><th scope="row">Trafność kategorii</th><td>x z wychwyconych</td></tr>
+            </tbody>
+          </table></div>
+
+          <h4>4.5.1 Dane</h4>
+          <p>Danymi wejściowymi były przykładowe transkrypcje 15-minutowych lekcji. Przed testem sam wypisałem poprawki lektora (N). Szkice podsumowań powstały według instrukcji:</p>
+          <div class="prompt">
+            <h4>Zasady przygotowania szkicu podsumowania lekcji</h4>
+            <p>Jesteś asystentem lektora języka obcego. Na wejściu dostajesz zapis lekcji (tekst) w pliku .txt. Rozmawiają lektor i uczeń. Imiona są zanonimizowane. Zapis może zawierać oznaczenia mówców (np. „Lektor:”, „Uczeń:”). Jeśli ich nie ma, ustal po kontekście, kto jest lektorem, i napisz o tym na początku szkicu.</p>
+            <h4>Co robisz</h4>
+            <p>Przygotuj SZKIC podsumowania dla lektora. Lektor go sprawdzi i zatwierdzi, więc ma być rzetelny, a nie ładny.</p>
+            <h4>Co uwzględniasz</h4>
+            <p>Tylko poprawki i uwagi, które wypowiedział lektor. Nie uwzględniaj błędów ucznia, których lektor nie skomentował.</p>
+            <h4>Struktura szkicu (po polsku, przykłady w języku lekcji)</h4>
+            <p>Trzy sekcje: 1. Gramatyka: poprawki dotyczące gramatyki i składni. 2. Słownictwo: nowe słowa, dobór słów, kolokacje, zwroty. 3. Mówienie: uwagi o wymowie, płynności, intonacji, sposobie wypowiedzi.</p>
+            <p>Każda pozycja ma format: Poprawka: [co było źle] → [jak jest poprawnie] · Cytat z zapisu: „[dosłowny fragment]” · Status: pewne / do sprawdzenia</p>
+            <h4>Zasady</h4>
+            <ul>
+              <li>Niczego nie dopisuj od siebie. Każda pozycja musi mieć cytat z zapisu.</li>
+              <li>Nie wymyślaj poprawek, wyjaśnień ani przykładów, których nie ma w zapisie.</li>
+              <li>Jeśli nie jesteś pewien, czy dana wypowiedź jest poprawką, albo do której sekcji należy, oznacz status „do sprawdzenia”.</li>
+              <li>Pomiń rozmowę towarzyską i wszystko, co nie jest poprawką ani uwagą lektora.</li>
+              <li>Jeśli sekcja nie ma żadnych pozycji, napisz „brak pozycji”.</li>
+              <li>Na końcu podaj liczbę pozycji w każdej sekcji i łączną liczbę.</li>
+              <li>Nie oceniaj własnej jakości i nie dodawaj komentarzy poza szkicem.</li>
+            </ul>
+          </div>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Transkrypcja</th><th>N</th><th>Wychwycone</th><th>Zapisane poprawnie</th><th>Nadmiarowe</th><th>Nadmiarowe oznaczone „do sprawdzenia”</th><th>Kategoria trafna</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>12</td><td>12/12</td><td>9/12</td><td>1</td><td>1/1</td><td>12/12</td></tr>
+              <tr><td>2</td><td>3</td><td>3/3</td><td>3/3</td><td>4</td><td>4/4</td><td>3/3</td></tr>
+              <tr><td>3</td><td>7</td><td>7/7</td><td>7/7</td><td>3</td><td>3/3</td><td>7/7</td></tr>
+              <tr class="is-total is-key"><td>Razem</td><td>22</td><td>22/22</td><td>19/22</td><td>8</td><td>8/8</td><td>22/22</td></tr>
+            </tbody>
+          </table></div>
+
+          <h4>4.5.2 Wnioski</h4>
+          <ul>
+            <li><strong>Wychwytywanie działa.</strong> Model znalazł wszystkie 22 poprawki lektora.</li>
+            <li><strong>Zapis poprawek wymaga pracy.</strong> 3 z 22 pozycji zawierały błąd. Najczęstszy: model przepisywał poprawkę lektora razem ze zmianą osoby („We were very slowly → <s>You</s> were very slow” zamiast „We were very slow”) albo ucinał zdanie („I want to remember my sister… → Remind my sister…”). Lektor musiałby takie pozycje poprawić. Dopisałem do instrukcji zasadę zapisu z perspektywy ucznia.</li>
+            <li><strong>Model dodawał potwierdzenia poprawnych wypowiedzi</strong> (8 pozycji), mimo że instrukcja je wykluczała. Wszystkie oznaczył jednak jako „do sprawdzenia”, więc oznaczanie niepewności działa.</li>
+            <li><strong>Możliwa potrzeba:</strong> potwierdzenia pojawiały się konsekwentnie, a informacja „to powiedziałeś dobrze” może mieć wartość dla ucznia. Do sprawdzenia z lektorami: czy podsumowanie powinno mieć osobną sekcję „Dobrze użyte”.</li>
+          </ul>
+          <p>Prototyp sprawdził etap „tekst lekcji → szkic podsumowania” przy założeniu, że transkrypcja jest poprawna.</p>
+
+          <h4>4.5.3 Makieta przeglądu</h4>
+          <p>Zbudowałem prototyp ekranu przeglądu szkicu. Lektor zostawia, edytuje lub usuwa pozycje, a po zatwierdzeniu dostaje czysty PDF dla ucznia, bez statusów i cytatów. Przygotowałem też wzór zgody na przetwarzanie lekcji w celu przygotowania podsumowania.</p>
+          <div class="shots">
+            <figure class="shot">
+              <div class="frame"><img src="content/img/podsumowanie.png" width="1716" height="1614" loading="lazy" alt="Czysty PDF dla ucznia: podsumowanie lekcji z sekcjami Gramatyka, Słownictwo i Mówienie."></div>
+              <figcaption>Lektor zostawia, edytuje lub usuwa pozycje, a po zatwierdzeniu dostaje czysty PDF dla ucznia, bez statusów i cytatów.</figcaption>
+            </figure>
+            <figure class="shot">
+              <div class="frame"><img src="content/img/zgoda.png" width="1614" height="1670" loading="lazy" alt="Wzór zgody na przetwarzanie lekcji w celu przygotowania podsumowania."></div>
+              <figcaption>Przygotowałem też wzór zgody na przetwarzanie lekcji w celu przygotowania podsumowania.</figcaption>
+            </figure>
+          </div>
+
+          <figure class="shot review-shot">
+            <div class="frame"><img src="content/img/przeglad.png" width="1640" height="1758" loading="lazy" alt="Prototyp ekranu przeglądu szkicu: pozycje z akcjami Zostaw, Edytuj, Usuń."></div>
+            <figcaption>Wersja z testu: pozycja „do sprawdzenia” ma domyślnie wybrane „Zostaw”, dlatego potwierdzenie trafiło do PDF ucznia.</figcaption>
+          </figure>
+          <p>Po teście przebudowałem ekran przeglądu zgodnie z kryteriami akceptacji SCRUM-21 (5.2.1):</p>
+          <ul>
+            <li>pozycje „do sprawdzenia” są na górze listy i nie mają domyślnej akcji,</li>
+            <li>„Zatwierdź” pozostaje nieaktywny, dopóki lektor nie zdecyduje o każdej z nich, a licznik pokazuje, ile zostało,</li>
+            <li>pozycje „pewne” zostają w podsumowaniu domyślnie i nie wymagają kliknięcia,</li>
+            <li>potwierdzenie poprawnej wypowiedzi ekran opisuje jako pytanie, czy uwzględnić je w podsumowaniu, a nie jako poprawkę,</li>
+            <li>ekran obsługuje się klawiaturą (↑↓, Z, E, U, ⌘↵), bo lektor przegląda szkic po każdej lekcji.</li>
+          </ul>
+          <figure class="shot review-shot">
+            <div class="frame"><img src="content/img/przeglad-v2.png" width="1926" height="1672" loading="lazy" alt="Wersja po zmianach: „Zatwierdź” jest nieaktywny, dopóki zostaje pozycja do sprawdzenia."></div>
+            <figcaption>Wersja po zmianach: „Zatwierdź” jest nieaktywny, dopóki zostaje pozycja do sprawdzenia.</figcaption>
+          </figure>
+          <p class="proto"><a class="proto-link" href="demo/" target="_blank" rel="noopener">Otwórz prototyp na pełnym ekranie</a></p>
+          <p>Nowej wersji nie testowałem jeszcze z lektorami i nie mierzyłem, czy skraca czas przeglądu. Sprawdzę to w pilotażu (T6).</p>
+
+          <h4>4.5.7 Czego prototyp nie sprawdza</h4>
+          <ul>
+            <li>rozpoznawania mowy na żywo i zamiany jej na tekst,</li>
+            <li>przechwytywania dźwięku z Meet i Teams,</li>
+            <li>odczytu poprawek ze wspólnego dokumentu i łączenia ich z transkrypcją,</li>
+            <li>spontanicznej rozmowy,</li>
+            <li>czasu sprawdzenia szkicu w porównaniu z ręcznym podsumowaniem. Zmierzę go w pilotażu (T6).</li>
+          </ul>
+          <p>Najwięcej ryzyka kryje przechwycenie i transkrypcja mowy. Ankieta wskazała jakość rozpoznawania jako główną obawę lektorów (9 z 15), ale nie rozróżniła, czy chodzi o transkrypcję, czy o wychwytywanie poprawek.</p>
+
+          <h3>4.6 Decyzja dotycząca dalszej pracy</h3>
+          <p>Podczas pracy nad prototypem zauważyłem, że szkic z podziałem na gramatykę, słownictwo i mówienie jest czytelniejszy, dlatego podział na trzy sekcje ma priorytet Must. Do Must należy też przechwycenie dźwięku i zamiana go na tekst, bo poprawki ustne po wypowiedzi to drugi najczęstszy kanał (11 z 15, Q4). Bez transkrypcji lektor musiałby przepisywać je ręcznie, a właśnie tę pracę narzędzie ma zastąpić. Równorzędnym źródłem jest wspólny dokument (12 z 15). Wgrywanie nagrania audio po lekcji to rozwiązanie zapasowe dla lektorów, u których przechwycenie nie będzie możliwe (Should).</p>
+        </section>
+
+        <!-- 5 -->
+        <section class="chapter" id="rozdzial-5">
+          <div class="chapter-head"><span class="display no num">05</span><h2 class="display">Product Backlog</h2></div>
+          <h3>5.0 Cel produktu i definicja ukończenia</h3>
+          <div class="block scallop"><p><strong>Cel produktu (Product Goal):</strong> niezależny lektor kończy lekcję online i w ciągu 5 minut wysyła uczniowi zatwierdzone podsumowanie poprawek ze wszystkich kanałów, bez przepisywania ich ręcznie.</p></div>
+          <p>Wszystkie elementy backlogu prowadzą do tego celu. Mierzy go wskaźnik główny z 6.1 (czas do zatwierdzonego podsumowania).</p>
+          <p><strong>Definicja ukończenia (Definition of Done), propozycja:</strong> element backlogu jest ukończony, gdy:</p>
+          <ul>
+            <li>spełnia wszystkie kryteria akceptacji,</li>
+            <li>działa na Google Meet i Teams w przeglądarce Chrome,</li>
+            <li>nie zapisuje ani nie przetwarza danych ucznia bez potwierdzonej zgody,</li>
+            <li>nagranie jest usuwane zgodnie z 4.4,</li>
+            <li>został sprawdzony przez lektora na przykładowej lekcji,</li>
+            <li>ma opis w krótkiej instrukcji dla lektora.</li>
+          </ul>
+          <p class="muted">W Scrumie definicję ukończenia ustala cały zespół Scrumowy. Pracuję bez zespołu, więc traktuję ją jako propozycję do uzgodnienia z deweloperami.</p>
+
+          <h3>5.1 Epiki</h3>
+          <p>Epiki wynikają z tabeli MoSCoW w podrozdziale 4.1.</p>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Ozn.</th><th>Epik</th><th>Priorytet</th><th>Cel</th></tr></thead>
+            <tbody>
+              <tr><td class="c">E1 · SCRUM-5</td><th scope="row">Przechwycenie dźwięku i transkrypcja</th><td><span class="pill pill-must">Must</span></td><td>Narzędzie przechwytuje dźwięk lekcji i zamienia go na wierny tekst, który zachowuje błędy ucznia i poprawki lektora</td></tr>
+              <tr><td class="c">E2 · SCRUM-6</td><th scope="row">Generowanie szkicu</th><td><span class="pill pill-must">Must</span></td><td>Szkic z poprawek ustnych i wspólnego dokumentu, z podziałem na gramatykę, słownictwo i mówienie, z cytatem źródłowym</td></tr>
+              <tr><td class="c">E3 · SCRUM-7</td><th scope="row">Przegląd i zatwierdzanie szkicu</th><td><span class="pill pill-must">Must</span></td><td>Lektor zostawia, edytuje lub usuwa pozycje jednym kliknięciem, niepewne są wyróżnione, cytat rozwijany</td></tr>
+              <tr><td class="c">E4 · SCRUM-8</td><th scope="row">Zgoda i dane ucznia</th><td><span class="pill pill-must">Must</span></td><td>Lektor potwierdza zgodę raz dla ucznia, narzędzie dostarcza wzór i zapisuje datę, rejestracja nie rusza bez potwierdzenia</td></tr>
+              <tr><td class="c">E5 · SCRUM-9</td><th scope="row">Eksport do PDF</th><td><span class="pill pill-must">Must</span></td><td>Czyste podsumowanie dla ucznia bez statusów i cytatów</td></tr>
+              <tr><td class="c">E6 · SCRUM-12</td><th scope="row">Konto lektora i pierwsze uruchomienie</th><td><span class="pill pill-must">Must</span></td><td>Bez konta nie ma gdzie przechowywać zgód i szkiców</td></tr>
+              <tr><td class="c">SCRUM-38</td><th scope="row">Usprawnienia po MVP</th><td><span class="pill pill-could">Could</span></td><td>Historyjki po MVP zebrane w osobnym epiku</td></tr>
+            </tbody>
+          </table></div>
+          <figure class="shot" style="margin:24px 0 0">
+            <div class="frame"><img src="content/img/jira-epik.png" width="1800" height="924" loading="lazy" alt="Epik SCRUM-7 Przegląd i zatwierdzanie szkicu w Jirze."></div>
+            <figcaption>E3 · SCRUM-7 Przegląd i zatwierdzanie szkicu</figcaption>
+          </figure>
+
+          <h3>5.2 User stories</h3>
+          <p>User stories napisałem w Jirze w formacie „Jako [użytkownik] chcę [akcja], żeby [cel / wartość dla użytkownika]”, z kryteriami akceptacji. Ponieważ mój projekt Jiry ma tylko typy Epik, Feature i Zadanie (bez typu Story), historyjki wpisałem jako Feature. Poziom w hierarchii jest ten sam co zadania, więc nie ma to wpływu na działanie backlogu.</p>
+          <figure class="shot" style="margin:24px 0 0">
+            <div class="frame"><img src="content/img/jira-backlog.png" width="1800" height="825" loading="lazy" alt="Product Backlog w Jirze: historyjki od SCRUM-13 do SCRUM-37 przypisane do epików."></div>
+            <figcaption>User stories napisałem w Jirze, z kryteriami akceptacji.</figcaption>
+          </figure>
+
+          <h4>5.2.1 Przykład: SCRUM-21 „Zostaw, edytuj, usuń jednym kliknięciem”</h4>
+          <div class="callout"><p class="lead">Jako lektor chcę zostawić, edytować lub usunąć pozycję jednym kliknięciem, żeby nie poprawiać tekstu w pliku.</p>
+          <p><strong>KA (kryteria akceptacji):</strong> trzy akcje przy każdej pozycji; domyślnie „Zostaw” tylko dla pozycji „pewne”; pozycje „do sprawdzenia” nie mają domyślnej akcji, a przycisk „Zatwierdź” jest nieaktywny, dopóki lektor nie zdecyduje o każdej z nich; usunięta pozycja nie trafia do PDF; edycja bez opuszczania listy.</p></div>
+          <div class="gwt">
+            <div class="card">
+              <h4>Scenariusz 1: domyślna akcja dla pozycji pewnej</h4>
+              <dl><dt>Given</dt><dd>szkic zawiera pozycję ze statusem „pewne”,</dd><dt>When</dt><dd>lektor otwiera ekran przeglądu,</dd><dt>Then</dt><dd>pozycja ma zaznaczoną akcję „Zostaw”.</dd></dl>
+            </div>
+            <div class="card">
+              <h4>Scenariusz 2: pozycja do sprawdzenia blokuje zatwierdzenie</h4>
+              <dl><dt>Given</dt><dd>szkic zawiera pozycję „do sprawdzenia”, przy której lektor nie wybrał akcji,</dd><dt>When</dt><dd>lektor próbuje zatwierdzić szkic,</dd><dt>Then</dt><dd>przycisk „Zatwierdź” jest nieaktywny, a nierozstrzygnięta pozycja jest wyróżniona.</dd></dl>
+            </div>
+            <div class="card">
+              <h4>Scenariusz 3: usunięta pozycja nie trafia do PDF</h4>
+              <dl><dt>Given</dt><dd>lektor wybrał „Usuń” przy pozycji,</dd><dt>When</dt><dd>zatwierdza szkic i pobiera PDF,</dd><dt>Then</dt><dd>tej pozycji nie ma w PDF.</dd></dl>
+            </div>
+          </div>
+
+          <h4>5.2.2 Claude with Atlassian</h4>
+          <p>Część historyjek napisałem i wpisałem w Jirze sam. Pozostałe powstały z pomocą Claude’a, który po połączeniu z Jirą dodał je bezpośrednio do projektu. Sprawdziłem je przed zapisaniem i porównałem z istniejącymi, żeby się nie dublowały. Claude pilnował też spójnego formatu i tego, żeby żadna historyjka nie wykraczała poza zakres z tabeli MoSCoW (4.1).</p>
+
+          <h4>5.2.3 Zasada INVEST</h4>
+          <p>Pisząc historyjki, brałem pod uwagę kryteria INVEST (niezależna, negocjowalna, wartościowa, możliwa do oszacowania, mała, testowalna), ale nie dało się ich spełnić wszędzie:</p>
+          <div class="table-wrap"><table class="wide">
+            <tbody>
+              <tr><th scope="row">Niezależność (I)</th><td>Bez przechwycenia nie ma transkrypcji, bez transkrypcji nie ma szkicu, bez szkicu nie ma przeglądu ani PDF. Historyjki z kolejnych epików zależą więc od poprzednich. Zgoda ucznia musi też poprzedzać start przechwytywania. Te zależności uwzględnię w roadmapie.</td></tr>
+              <tr><th scope="row">Negocjowalność (N)</th><td>User Story jest furtką do konwersacji, nie surowym wymogiem.</td></tr>
+              <tr><th scope="row">Wartość (V)</th><td>Bezpośrednia dla lektora w większości historyjek, ale „Konto i logowanie” oraz „Usunięcie danych ucznia” są potrzebne głównie po to, żeby narzędzie w ogóle mogło działać i budziło zaufanie, a nie dlatego, że lektor o nie prosi.</td></tr>
+              <tr><th scope="row">Możliwość oszacowania (E)</th><td>W tym projekcie nie do sprawdzenia. Nie pracuję z zespołem deweloperskim i nie mam estymacji, więc to kryterium zostawiam bez oceny. Historyjki wokół transkrypcji są dodatkowo obarczone niewiadomą, bo nie wiem, jak dobrze dźwięk da się przechwycić i zamienić na tekst.</td></tr>
+              <tr><th scope="row">Małe (S)</th><td>Większość historyjek jest mała, ale kilka jest wyraźnie większych, zwłaszcza „Transkrypcja zachowuje błędy ucznia” i „Wyłapywanie poprawek ustnych”. Przy realnym rozwoju trzeba by je rozbić.</td></tr>
+              <tr><th scope="row">Testowalność (T)</th><td>Kryteria akceptacji są sprawdzalne, ale tam, gdzie zależą od jakości transkrypcji (np. zachowanie błędów ucznia), wymagają jeszcze testu na nagranej rozmowie.</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>5.3 Product Backlog Ordering</h3>
+          <p>Kolejność prac ustalam na dwa sposoby. Elementy Must są niezbędne do działania MVP, więc ich kolejność wynika z zależności między nimi. Elementy Should i Could konkurują o miejsce w kolejnej wersji, więc ich kolejność wyznacza metoda RICE.</p>
+          <p>W obecnym Product Backlogu występują zależności, które zaznaczyłem w Jirze:</p>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Blokuje</th><th>Blokowane</th></tr></thead>
+            <tbody>
+              <tr><td>Jednorazowe potwierdzenie zgody SCRUM-27</td><td>Start i stop przechwytywania SCRUM-17</td></tr>
+              <tr><td>Jednorazowe potwierdzenie zgody SCRUM-27</td><td>Wgranie nagrania audio SCRUM-20</td></tr>
+              <tr><td>Transkrypcja zachowuje błędy ucznia SCRUM-18</td><td>Wyłapywanie poprawek ustnych SCRUM-13</td></tr>
+              <tr><td>Podział na trzy sekcje SCRUM-14</td><td>Szkic jako lista pozycji SCRUM-22</td></tr>
+              <tr><td>Zatwierdzenie i czysty podgląd SCRUM-25</td><td>Czysty PDF SCRUM-31</td></tr>
+              <tr><td>Zatwierdzenie i czysty podgląd SCRUM-25</td><td>Usunięcie nagrania po zatwierdzeniu SCRUM-29</td></tr>
+            </tbody>
+          </table></div>
+          <p><strong>Must: zależności układają się w łańcuch:</strong></p>
+          <ol class="steps">
+            <li><div>Konto lektora i zgoda ucznia (E6, E4), bo zgoda musi poprzedzać przechwytywanie.</div></li>
+            <li><div>Przechwycenie dźwięku i transkrypcja (E1).</div></li>
+            <li><div>Generowanie szkicu (E2).</div></li>
+            <li><div>Przegląd i zatwierdzanie szkicu (E3).</div></li>
+            <li><div>Eksport do PDF i usunięcie nagrania po zatwierdzeniu (E5, E4).</div></li>
+          </ol>
+          <div class="callout"><p>Jako pierwsze zweryfikować należy to, co jest największym ryzykiem: czy przechwycenie dźwięku i transkrypcja zachowują błędy ucznia. Jeśli to nie zadziała, reszta łańcucha traci sens.</p></div>
+
+          <p><strong>Should i Could: RICE = (Reach × Impact × Confidence) / Effort</strong></p>
+          <ul>
+            <li><strong>Reach:</strong> ilu z 15 ankietowanych lektorów dotyczy funkcja, na podstawie ankiety.</li>
+            <li><strong>Impact:</strong> skala 0,25 (minimalny) – 0,5 – 1 – 2 – 3 (ogromny), moja ocena.</li>
+            <li><strong>Confidence:</strong> jak pewne są Reach i Impact, w procentach.</li>
+            <li><strong>Effort:</strong> szacunek pracy w tygodniach. Brak zespołu deweloperskiego, więc to moje założenie.</li>
+          </ul>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>User story</th><th>Reach (z 15)</th><th>Impact</th><th>Confidence</th><th>Effort (tyg.)</th><th>Wynik</th></tr></thead>
+            <tbody>
+              <tr class="is-key"><th scope="row">Kopiowanie podsumowania jako zwykły tekst</th><td>9</td><td>0,5</td><td>50%</td><td>0,5</td><td><strong>4,5</strong></td></tr>
+              <tr class="is-key"><th scope="row">Wgranie nagrania audio</th><td>6</td><td>3</td><td>50%</td><td>2</td><td><strong>4,5</strong></td></tr>
+              <tr><th scope="row">Informacja dla ucznia na czacie spotkania</th><td>8</td><td>0,25</td><td>50%</td><td>0,5</td><td>2,0</td></tr>
+              <tr><th scope="row">Wysyłka podsumowania z poziomu narzędzia</th><td>9</td><td>1</td><td>50%</td><td>4</td><td>1,1</td></tr>
+              <tr><th scope="row">Uwagi z czatu w szkicu</th><td>3</td><td>1</td><td>50%</td><td>3</td><td>0,5</td></tr>
+            </tbody>
+          </table></div>
+          <p><strong>Skąd wzięły się wartości Reach:</strong></p>
+          <ul>
+            <li><strong>Kopiowanie i wysyłka (9):</strong> 9 z 15 wskazało „formatowanie i wysyłanie” jako uciążliwą część pracy po lekcji. To wskaźnik pośredni, bo ankieta nie pyta, czy lektorzy chcieliby wklejać tekst lub wysyłać z narzędzia, dlatego Confidence jest niskie.</li>
+            <li><strong>Informacja na czacie (8):</strong> 8 z 15 wymieniło zgodę ucznia lub rodziców i RODO jako zniechęcające. Impact jest minimalny, bo informacja nie zastępuje zgody.</li>
+            <li><strong>Wgranie audio (6):</strong> 6 z 15 lektorów prowadzi przynajmniej część lekcji na Zoomie, Skypie lub platformie szkoły, gdzie rozszerzenie nie działa. Tylko 1 z nich uczy wyłącznie poza Meet i Teams. Ankieta nie pytała o Teams w wersji desktopowej, więc to dolna granica (T4).</li>
+            <li><strong>Czat (3):</strong> nikt nie zbiera uwag z czatu „często” lub „zawsze”. 3 z 15 robi to „czasem”, 9 „rzadko”, 3 „nigdy”.</li>
+          </ul>
+          <p>Confidence oceniłem w skali 100% / 80% / 50% (wysoka, średnia, niska pewność). Większość pozycji ma 50%, czyli najniższy stopień skali, bo jedynym źródłem danych jest ankieta (n = 15). Ranking traktuję jako punkt wyjścia do rozmowy, a nie ostateczną kolejność.</p>
+          <p><strong>Wnioski i ograniczenia:</strong></p>
+          <ul>
+            <li>Kopiowanie tekstu i wgranie audio mają ten sam wynik (4,5). Kopiowanie robię pierwsze, bo zajmuje ok. 0,5 tygodnia i od razu skraca wysyłkę 9 z 15 lektorom. Wgranie audio jest zaraz po nim.</li>
+            <li>Czat wyszedł ostatni. Najczęstsze źródła uwag są pokryte przez Must: poprawki ustne po wypowiedzi ucznia (11 z 15 „często” lub „zawsze”) i wspólny dokument (12 z 15). Przy kolejnym przeglądzie backlogu rozważę zmianę jego priorytetu z Should na Could.</li>
+            <li>Skala próby: n = 15 i nielosowy dobór oznaczają sygnał, nie dowód. Wyniki RICE to punkt wyjścia do rozmowy, a nie ostateczny ranking.</li>
+          </ul>
+        </section>
+
+        <!-- 6 -->
+        <section class="chapter" id="rozdzial-6">
+          <div class="chapter-head"><span class="display no num">06</span><h2 class="display">Metryki, ryzyka i walidacja</h2></div>
+          <h3>6.1 Metryki sukcesu</h3>
+          <p>Głównym wskaźnikiem sukcesu jest czas od końca lekcji do zatwierdzenia podsumowania. W ankiecie mediana czasu przygotowania podsumowania to 6–10 min (Q9). Średnia liczona ze środków przedziałów wynosi ok. 11 min, a przy średnio ok. 10 lekcjach tygodniowo (Q2) daje to ok. 2 godzin tygodniowo. To szacunek z danych przedziałowych, a nie pomiar. Celem jest skrócenie czasu do 5 minut lub mniej.</p>
+          <div class="table-wrap"><table class="xwide">
+            <thead><tr><th>Metryka</th><th>Co mierzy</th><th>Cel</th><th>Podstawa progu</th></tr></thead>
+            <tbody>
+              <tr class="is-key"><th scope="row">Czas do zatwierdzonego podsumowania</th><td>Wskaźnik główny: od zakończenia nagrywania do zatwierdzenia szkicu (zapisywany automatycznie przez narzędzie)</td><td class="c"><strong>≤ 5 min</strong></td><td>Punkt wyjścia: mediana 6–10 min z ankiety (deklaracje, Q9). 2 z 15 lektorów już teraz robi to w 5 minut lub szybciej, więc cel to poziom najszybszych. W pilotażu lektorzy przez tydzień sami mierzą czas ręcznego przygotowania (T6)</td></tr>
+              <tr><th scope="row">Pozycje zostawione bez edycji</th><td>Jakość szkicu: ile pozycji lektor akceptuje jednym kliknięciem „Zostaw”</td><td class="c">≥ 70%</td><td>Założenie. W prototypie 19 z 22 poprawek zostało zapisanych poprawnie (4.5.2), ale to moja ocena szkicu, a nie ocena lektorów. Próg do kalibracji w pilotażu</td></tr>
+              <tr><th scope="row">Pokrycie poprawek</th><td>Ile poprawek lektora z lekcji trafiło do szkicu</td><td class="c">≥ 80%</td><td>Założenie. Poniżej tego lektor dopisywałby brakujące poprawki ręcznie i zysk czasu znika. Do kalibracji w T2</td></tr>
+              <tr><th scope="row">Wierność transkrypcji</th><td>Ile błędów ucznia transkrypcja zachowała dosłownie</td><td class="c">≥ 80%</td><td>Założenie. Do kalibracji w T1</td></tr>
+              <tr><th scope="row">Uczniowie lektora z potwierdzoną zgodą</th><td>Tarcie związane ze zgodą: odsetek uczniów, od których lektor uzyskał zgodę (bez zgody lekcje tego ucznia nie są nagrywane)</td><td>Bez progu do czasu T3</td><td>Nie mam danych, jaki odsetek byłby akceptowalny. Próg ustalę po T3</td></tr>
+              <tr><th scope="row">Retencja w pilotażu</th><td>Odsetek lektorów, którzy w ostatnim tygodniu pilotażu nadal używali narzędzia po co najmniej połowie swoich lekcji</td><td class="c">≥ 60%</td><td>Założenie bez oparcia w danych. Ankieta mierzy zainteresowanie (9 z 15 ocen 4–5), a nie korzystanie. Do kalibracji po pilotażu</td></tr>
+              <tr><th scope="row">Powroty ucznia do podsumowania</th><td>Odsetek uczniów, którzy według krótkiej ankiety w pilotażu przeczytali podsumowanie co najmniej raz poza lekcją</td><td>Bez progu, metryka obserwacyjna</td><td>Sprawdza H5. MVP daje PDF, więc otwarć nie da się mierzyć automatycznie</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>6.2 Ryzyka</h3>
+          <p class="muted">Ocenę wpływu i prawdopodobieństwa wykonałem sam.</p>
+          <div class="table-wrap"><table class="xwide">
+            <thead><tr><th>Ryzyko</th><th>Wpływ</th><th>Prawd.</th><th>Co zrobię</th></tr></thead>
+            <tbody>
+              <tr><td>Przechwycenie dźwięku i transkrypcja nie zachowują błędów ucznia lub nie działają na używanych platformach (nieprzetestowane)</td><td class="c">wysoki</td><td class="c">wysokie</td><td>Test T1. Zabezpieczenie: wgranie nagrania audio (SCRUM-20)</td></tr>
+              <tr><td>Rozszerzenie przechwytuje dźwięk karty przeglądarki, czyli głos ucznia, ale nie mikrofon lektora. Poprawki wypowiada lektor, więc bez jego głosu szkic nie powstanie. Do tego transkrypcja musi rozróżniać, kto mówi</td><td class="c">wysoki</td><td class="c">wysokie</td><td>Nagrywanie dwóch osobnych ścieżek: karta (uczeń) i mikrofon (lektor). Każda ścieżka oznacza mówcę, więc nie trzeba go zgadywać. Sprawdzę to w T1</td></tr>
+              <tr><td>Bariera zgody ucznia lub rodzica: 8 z 15 wymieniło zgodę i RODO jako zniechęcające (Q16), ale ankieta nie rozróżnia, czy chodzi o uciążliwość, czy o obawy prawne</td><td class="c">wysoki</td><td class="c">średnie</td><td>Zgoda raz na ucznia, gotowy wzór, usuwanie nagrania po zatwierdzeniu. Test T3</td></tr>
+              <tr><td>Lektorzy oznaczają poprawki w dokumencie na różne sposoby (sugestie, komentarze, kolory) albo nie używają Google Docs, więc narzędzie może ich nie rozpoznać</td><td class="c">wysoki</td><td class="c">średnie</td><td>Pytania w ankiecie uzupełniającej (T3/T4)</td></tr>
+              <tr><td>Jakość szkicu: 6 z 15 wskazało konieczność poprawiania szkicu jako zniechęcającą (Q16)</td><td class="c">średni</td><td class="c">średnie</td><td>Wyróżnione pozycje niepewne, przegląd przed zatwierdzeniem. Metryka akceptacji. Test T2</td></tr>
+              <tr><td>Forma narzędzia (rozszerzenie czy aplikacja) nierozstrzygnięta; ankieta pyta o platformy (Meet 11 z 15, Teams 9, Zoom 4), a nie o to, czy lektorzy używają przeglądarki czy aplikacji</td><td class="c">średni</td><td class="c">średnie</td><td>Test T4</td></tr>
+              <tr><td>Konkurencja: najbliższy produkt to Audilingua; Zoom AI Companion i Otter robią notatki ze spotkań (rozdz. 3)</td><td class="c">średni</td><td class="c">niskie–średnie</td><td>Pozycjonowanie na poprawkach lektora, a nie na ogólnych notatkach. Ogólne narzędzia do notatek nie wyłapują poprawek lektora, ale najbliższy konkurent (Audilingua) i ręczna praca w ChatGPT (10 z 15) już istnieją</td></tr>
+              <tr><td>Gotowość do zapłaty: ankieta nie pozwala jej jednoznacznie odczytać (Q14)</td><td class="c">średni</td><td class="c">średnie</td><td>Test T5</td></tr>
+              <tr><td>Mała, nielosowa próba (n = 15): ryzyko zawyżenia wniosków</td><td class="c">średni</td><td class="c">wysokie</td><td>Opisywanie wyników jako sygnału. Powtórzenie kluczowych pytań na większej grupie</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>6.3 Plan walidacji</h3>
+          <div class="table-wrap"><table class="xwide">
+            <thead><tr><th>Test</th><th>Co sprawdzam</th><th>Próg</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">T1. Przechwytywanie dźwięku i transkrypcja</th><td>Ile błędów ucznia zachowało się dosłownie, ile poprawek lektora zostało uchwyconych i czy wypowiedzi są przypisane do właściwej osoby. Nagrywam dwie osobne ścieżki: kartę przeglądarki (uczeń) i mikrofon (lektor). Scenariusz zawiera wtrącenia po polsku, a to samo nagranie przepuszczam przez co najmniej 2 silniki transkrypcji.</td><td>≥ 80% zachowanych błędów ucznia, ≥ 80% uchwyconych poprawek i ≥ 90% wypowiedzi przypisanych do właściwej osoby</td></tr>
+              <tr><th scope="row">T2. Szkic na większej liczbie lekcji</th><td>Prototyp sprawdziłem na 3 przykładowych transkrypcjach. Należałoby przetestować narzędzie na większej liczbie zanonimizowanych transkrypcji. Do sprawdzenia: ile z poprawek pokrywa się, odsetek poprawek do zostawienia bez edycji przez lektora, liczba pozycji nieprawdziwych.</td><td>≥ 70% pozycji bez edycji i ≥ 80% pokrycia</td></tr>
+              <tr><th scope="row">T3. Bariera zgody</th><td>Ankieta uzupełniająca: czy bariera to czas i uciążliwość, czy obawa o uczniów, oraz czy ekran zgody z prototypu (zgoda raz, gotowy wzór) jest akceptowalny. Wynik posłuży też do ustalenia progu dla metryki „uczniowie z potwierdzoną zgodą”.</td><td>≥ 2/3 uznaje takie rozwiązanie za akceptowalne</td></tr>
+              <tr><th scope="row">T4. Forma narzędzia i wspólny dokument</th><td>W tej samej ankiecie trzy pytania: Czy prowadzisz lekcje w przeglądarce, czy w aplikacji na komputerze? W jakim narzędziu prowadzisz wspólny dokument z uczniem (Google Docs / Word Online / Word desktop / inne)? Jak oznaczasz poprawki w dokumencie (tryb sugestii, komentarze, kolor, przekreślenie, osobna sekcja)?</td><td>≥ 50% prowadzi lekcje w przeglądarce i ≥ 50% używa Google Docs</td></tr>
+              <tr><th scope="row">T5. Gotowość do zapłaty</th><td>Pytanie o cenę za narzędzie skracające podsumowanie do 5 minut. Ewentualnie strona z zapisem na listę oczekujących do zmierzenia odsetka zapisów.</td><td>Określę po sprawdzeniu, jakie ceny stosują obecnie używane narzędzia</td></tr>
+              <tr><th scope="row">T6. Pilotaż na prawdziwych lekcjach</th><td>5 lektorów, 5 tygodni. Tydzień 0: lektorzy przygotowują podsumowania jak dotąd i sami mierzą czas (punkt wyjścia). Tygodnie 1–4: lektorzy korzystają z narzędzia. Mierzę wszystkie metryki z 6.1. Pokrycie = pozycje ze szkicu ÷ (pozycje ze szkicu + dopisane ręcznie). Po pilotażu uczniowie wypełniają krótką ankietę (3 pytania: czy przeczytali podsumowanie, ile razy do niego wrócili, co było najbardziej przydatne). Wynik weryfikuje H5.</td><td>Progi z 6.1: ≤ 5 min, ≥ 70% pozycji bez edycji, ≥ 80% pokrycia, ≥ 60% retencji</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>6.4 Zasady decyzji</h3>
+          <div class="table-wrap"><table class="wide">
+            <thead><tr><th>Wynik</th><th>Decyzja</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">T1 poniżej progu</th><td>Wgranie nagrania audio (SCRUM-20) przechodzi z Should do Must, zmieniam silnik lub ustawienia transkrypcji, a jeśli to nie pomoże, rezygnuję z przechwytywania na żywo</td></tr>
+              <tr><th scope="row">T2 poniżej progu</th><td>Poprawiam zasady generowania szkicu i podział na sekcje, potem powtarzam test</td></tr>
+              <tr><th scope="row">T3 poniżej progu</th><td>Zmieniam sposób zbierania zgody zależnie od przyczyny z T3. Jeśli barierą jest uciążliwość, upraszczam proces (np. gotowa klauzula do umowy lektora). Jeśli barierą są obawy o uczniów, rozważam tryb bez nagrywania: szkic tylko ze wspólnego dokumentu</td></tr>
+              <tr><th scope="row">T4: większość używa aplikacji</th><td>Jeśli większość używa aplikacji, zmieniam formę z rozszerzenia na aplikację desktopową. Jeśli większość nie używa Google Docs, zmieniam źródło dokumentu w MVP na najczęściej wskazane narzędzie</td></tr>
+              <tr><th scope="row">T5: niska gotowość do zapłaty</th><td>Wracam do wartości, którą narzędzie realnie daje, i weryfikuję model cenowy</td></tr>
+              <tr><th scope="row">H5 potwierdzona (uczniowie rzadko wracają)</th><td>W etapie Later rozważam funkcje dla ucznia: link do podsumowania zamiast PDF (pozwala mierzyć otwarcia) i powtórki z poprzednich lekcji</td></tr>
+              <tr><th scope="row">T6 poniżej progu</th><td>Jeśli zawodzi jakość szkicu (edycje, pokrycie), wracam do T2 i poprawiam instrukcję. Jeśli jakość jest dobra, a czas przekracza 5 min, sprawdzam, który krok trwa najdłużej. Jeśli lektorzy przestają korzystać mimo dobrych wyników, rozmawiam z tymi, którzy zrezygnowali</td></tr>
+            </tbody>
+          </table></div>
+        </section>
+
+        <!-- 7 -->
+        <section class="chapter" id="rozdzial-7">
+          <div class="chapter-head"><span class="display no num">07</span><h2 class="display">Roadmapa</h2></div>
+          <p>Roadmapę układam według podejścia Now–Next–Later (J. Bastow, <a href="https://www.prodpad.com/blog/invented-now-next-later-roadmap/" rel="noopener">ProdPad</a>): Now (to, nad czym pracuję), Next (to, co po tym, zależne od wyników Now) i Later (możliwe kierunki rozwoju, które wymagają potwierdzenia). W każdej kolumnie, oprócz funkcji, opisuję cel, żeby praca była powiązana z tym, co chcę osiągnąć. Nie używam dat kalendarzowych, bo pracuję bez zespołu, więc terminy byłyby zgadywaniem. Zamiast nich każdy etap kończy się bramką decyzyjną z 6.4. Kolejność wynika z zależności między epikami i oceny RICE (5.3).</p>
+          <div class="roadmap">
+            <div class="card">
+              <h4>Now</h4>
+              <p class="goal">Cel: sprawdzić, czy da się zebrać poprawki z dokumentu i dźwięku lekcji, i zbudować MVP</p>
+              <ol>
+                <li>Walidacja przed budową: T1, T3, T4 (6.3); T5 równolegle</li>
+                <li>MVP: dokument + dźwięk lekcji → szkic → przegląd przez lektora → PDF</li>
+                <li>Pilotaż na prawdziwych lekcjach (T6)</li>
+              </ol>
+              <p class="gate"><strong>Bramka:</strong> pilotaż potwierdza progi z 6.1</p>
+            </div>
+            <div class="card">
+              <h4>Next</h4>
+              <p class="goal">Cel: usunąć uciążliwości po MVP</p>
+              <ul>
+                <li>Kopiowanie podsumowania jako zwykły tekst</li>
+                <li>Informacja dla ucznia na czacie spotkania</li>
+                <li>Wgranie nagrania audio (do Now, jeśli T1 wypadnie słabo)</li>
+              </ul>
+              <p class="gate"><strong>Bramka:</strong> wyniki pilotażu pokazują, które funkcje lektorzy faktycznie potrzebują</p>
+            </div>
+            <div class="card">
+              <h4>Later</h4>
+              <p class="goal">Cel: rozszerzyć wartość, jeśli dane to uzasadnią</p>
+              <ul>
+                <li>Wysyłka podsumowania z poziomu narzędzia</li>
+                <li>Uwagi z czatu w szkicu</li>
+                <li>Zaangażowanie ucznia: link zamiast PDF, powtórki. Bramka: wynik H5 z pilotażu</li>
+              </ul>
+              <p class="gate"><strong>Bramka:</strong> dane z użycia po etapie Next</p>
+            </div>
+          </div>
+
+          <h3>7.1 Bramki decyzyjne</h3>
+          <ul>
+            <li><strong>Po T1:</strong> przechwycenie i transkrypcja zachowują ≥ 80% błędów ucznia i ≥ 80% poprawek lektora, a ≥ 90% wypowiedzi jest przypisanych do właściwej osoby. Jeśli nie, stosuję zasady z 6.4: wgranie audio (SCRUM-20) przechodzi z Should do Must, zmieniam silnik lub ustawienia transkrypcji, a w ostateczności rezygnuję z przechwytywania na żywo.</li>
+            <li><strong>Po pilotażu:</strong> czas do podsumowania ≤ 5 min, ≥ 70% pozycji bez edycji, ≥ 80% pokrycia poprawek i ≥ 60% retencji. Jeśli któryś próg nie jest spełniony, wracam do odpowiedniego kroku z 6.4. Progi oznaczone w 6.1 jako założenia kalibruję na danych z pilotażu.</li>
+            <li><strong>Po etapie Next:</strong> kolejność w Later przeliczam metodą RICE na rzeczywistych danych zamiast założeń.</li>
+          </ul>
+          <p>Kolejność w Now wynika z zależności zaznaczonych w Jirze (5.3): zgoda poprzedza przechwytywanie, przechwytywanie poprzedza szkic, a zatwierdzenie poprzedza PDF i usunięcie nagrania.</p>
+          <p>Elementy z kategorii Won’t z tabeli w 4.1 nie wchodzą do żadnego etapu. Wrócę do nich dopiero, jeśli dane pokażą taką potrzebę. Wyjątkiem jest aplikacja desktopowa, o której decyduje wynik T4.</p>
+        </section>
+
+        <!-- 8 -->
+        <section class="chapter" id="rozdzial-8">
+          <div class="chapter-head"><span class="display no num">08</span><h2 class="display">Czego się nauczyłem i co zrobiłbym inaczej</h2></div>
+          <div class="learn">
+            <div class="card">
+              <h4>Czego się nauczyłem</h4>
+              <ul>
+                <li><strong>Własne doświadczenie to hipoteza, a nie dowód.</strong> Problem, który sam odczuwałem jako lektor (gubienie poprawek ustnych), okazał się u innych lektorów dużo mniejszy. Zanim zbuduję rozwiązanie wokół własnego bólu, sprawdzam, czy mają go inni.</li>
+                <li><strong>Niepotwierdzona hipoteza też jest wynikiem.</strong> Obalenie H1 i H2 nie zakończyło projektu, tylko wskazało lepszy kierunek. Wartością discovery jest decyzja, a nie potwierdzenie pomysłu.</li>
+                <li><strong>Metoda oceny ma taki sam wpływ jak sam wynik.</strong> W teście prototypu jedno źle zdefiniowane pojęcie (co liczę jako poprawkę) zamieniło wynik z „wymaga pracy” na „100% trafień”. Definicje i progi ustalam przed testem, a nie po nim.</li>
+                <li><strong>Priorytetyzacja to decyzja, a nie wynik wzoru.</strong> RICE dał remis; liczby pomagają uporządkować rozmowę, ale ostatecznie decyduje PO, który wie, które założenia są najsłabsze.</li>
+                <li><strong>Dobry backlog zależy od wąskiego gardła.</strong> Cały łańcuch MVP zależy od jednego niesprawdzonego elementu: przechwytywania i transkrypcji. Najpierw testuję to, co może unieważnić resztę pracy.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h4>Co zadziałało</h4>
+              <ul>
+                <li><strong>Mierzalne hipotezy przed ankietą.</strong> Dzięki progom ustalonym z góry mogłem uczciwie uznać, że moja pierwotna teza się nie potwierdziła, zamiast dopasowywać wyniki do pomysłu.</li>
+                <li><strong>Pivot zamiast porzucenia projektu.</strong> Ankieta obaliła H1 i H2, ale pokazała inny, silniejszy ból: składanie uwag z kilku miejsc (13 z 15). Zawęziłem problem, zamiast budować rozwiązanie, którego nikt nie potrzebuje.</li>
+                <li><strong>Prototyp przed backlogiem.</strong> Test szkicu ujawnił wadę UX, czyli potwierdzenie, które trafiło do PDF ucznia. Zmieniłem kryteria akceptacji, zanim ktokolwiek napisał linijkę kodu.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h4>Co zrobiłbym inaczej</h4>
+              <ul>
+                <li><strong>Wywiady przed ankietą.</strong> Planowałem je, ale ich nie przeprowadziłem. Kilka rozmów pomogłoby lepiej sformułować pytania, np. o narzędzie do wspólnego dokumentu czy rozróżnienie przeglądarki i aplikacji desktopowej. Te luki muszę teraz uzupełniać dodatkowymi testami (T3, T4).</li>
+                <li><strong>Progi testu prototypu zapisane przed testem.</strong> W pierwszej ocenie wliczyłem potwierdzenia do poprawek i wyszło 100% trafień. Gdybym wcześniej zdefiniował, co liczę jako poprawkę, uniknąłbym zawyżonego wyniku.</li>
+                <li><strong>Najpierw najtańszy test ryzyka.</strong> Największą niewiadomą jest przechwytywanie dźwięku i transkrypcja. Test T1 kosztuje kilka godzin, więc warto go zrobić przed rozpisaniem całego backlogu.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="arches is-up" aria-hidden="true"></div>
+</section>
+
 </main>
 
+<footer class="site-foot">
+  <div class="wrap">
+    <span class="logo">WrapItUp<span class="dot">.</span></span>
+    <span>Przemysław Knesz</span>
+    <span>Indywidualne studium przypadku</span>
+  </div>
+</footer>
+
 <script>
-  // Dane przepisane z pliku "transkrypcja 1_szkic.md"
-  const SOURCE_NAME = "transkrypcja 1";
-  const SECTIONS = [
-    { id: "gram", name: "Gramatyka", items: [
-      { wrong: "I wake up really early", right: "I woke up really early", status: "pewne",
-        quote: ["So on Saturday I wake up really early", "Teacher: You woke up really early.", "Student: Woke up, yeah."] },
-      { wrong: "We didn't went together", right: "We didn't go together", status: "pewne",
-        quote: ["We didn't went together because of that.", "Teacher: One small correction: “We didn't go together.” After “didn't”, use “go”."] },
-      { wrong: "there was too many people", right: "there were too many people", status: "pewne",
-        quote: ["Actually, there was too many people, so we went somewhere else.", "Teacher: There were too many people.", "Student: Were, right."] },
-      { wrong: "We were very slowly at first", right: "You were very slow at first / You worked very slowly", status: "pewne",
-        quote: ["We were very slowly at first.", "Teacher: You were very slow at first. Or you worked very slowly."] },
-      { wrong: "more cheaper", right: "cheaper", status: "pewne",
-        quote: ["Her sofa is more cheaper than mine", "Teacher: Just “cheaper”, without “more”."] }
-    ]},
-    { id: "vocab", name: "Słownictwo", items: [
-      { wrong: "I almost lost the train", right: "I almost missed the train", status: "pewne",
-        quote: ["I almost lost the train.", "Teacher: You almost missed the train?", "Student: Yes! Missed it."] },
-      { wrong: "the right… thing. You use it with screws", right: "a screwdriver", status: "pewne",
-        quote: ["we didn't have the right… thing. You use it with screws.", "Teacher: A screwdriver?", "Student: Yes, that."] },
-      { wrong: "Can you borrow me a screwdriver?", right: "Can you lend me a screwdriver?", status: "pewne",
-        quote: ["“Can you borrow me a screwdriver?”", "Teacher: In English, “Can you lend me a screwdriver?” The neighbour lends it to you; you borrow it."] },
-      { wrong: "we made some photos", right: "you took some photos", status: "pewne",
-        quote: ["Then we made some photos by the river.", "Teacher: You took some photos.", "Student: Took photos. Yeah."] },
-      { wrong: "brak błędu: \"remember the weekend\" (zachować wspomnienie)", right: "poprawne, lektor to potwierdził", status: "do sprawdzenia",
-        quote: ["Teacher: Do you mean “remember the weekend” as in keep the memory, or “remind yourself about something you need to do”?", "Student: Keep the memory.", "Teacher: Then “remember” is right."] },
-      { wrong: "I want to remember my sister to send me her photos", right: "Remind my sister to send me her photos", status: "pewne",
-        quote: ["Also, I want to remember my sister to send me her photos. No, wait… I want to… remind my sister?", "Teacher: Exactly. “Remind my sister to send me her photos.” Nice self-correction."] }
-    ]},
-    { id: "speak", name: "Mówienie", items: [
-      { wrong: "restaurant z wymówionym końcowym \"t\"", right: "końcowe \"t\" nieme", status: "pewne",
-        quote: ["Teacher: Yes. Just a pronunciation point: you pronounced the final “t”. In the usual English pronunciation, that final “t” is silent."] },
-      { wrong: "comfortable z akcentem na \"table\"", right: "COMfortable (akcent na początku)", status: "pewne",
-        quote: ["Teacher: Quick pronunciation point: in “comfortable”, you put the main stress on “table”. The main stress goes at the beginning: COMfortable."] }
-    ]}
-  ];
+(function () {
+  var views = Array.prototype.slice.call(document.querySelectorAll('[data-view]'));
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('[data-nav]'));
+  var titles = { 'start': 'WrapItUp. Case study Product Ownera', 'skrot': 'Skrót · WrapItUp.', 'case-study': 'Pełne case study · WrapItUp.' };
+
+  function route() {
+    var hash = decodeURIComponent(location.hash.slice(1)) || 'start';
+    var view = document.querySelector('[data-view="' + hash + '"]');
+    var target = view;
+    if (!view) {
+      target = document.getElementById(hash);
+      view = target && target.closest('[data-view]');
+    }
+    if (!view) { view = document.querySelector('[data-view="start"]'); target = null; }
+    var name = view.getAttribute('data-view');
+
+    views.forEach(function (v) { v.classList.toggle('is-active', v === view); });
+    navLinks.forEach(function (a) {
+      if (a.getAttribute('data-nav') === name) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+    document.title = titles[name];
+
+    if (target && target !== view) { target.scrollIntoView(); }
+    else { window.scrollTo(0, 0); }
+  }
+  window.addEventListener('hashchange', route);
+  route();
+
+  // Highlight the current chapter in the table of contents.
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        tocLinks.forEach(function (a) { a.classList.toggle('is-current', a.getAttribute('href') === '#' + e.target.id); });
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    document.querySelectorAll('.chapter').forEach(function (s) { io.observe(s); });
+  }
+})();
 </script>
-<script src="./przeglad.js"></script>
+
 <script>
-  // Ekran zgody ucznia (makieta: nic nie jest zapisywane poza stroną)
-  const TEMPLATES = {
-    adult: () =>
-`Zgoda na nagrywanie i przetwarzanie lekcji w celu przygotowania podsumowania
+/* Velaris: animowane tło WebGL (simplex noise), przeniesione z komponentu React do czystego JS.
+   Zmiany względem oryginału: kolory z guideline'u, winieta i dół wygaszane do koloru tła (paper) zamiast do czerni. */
+(function () {
+  var canvas = document.querySelector('.velaris');
+  if (!canvas) return;
+  var gl = canvas.getContext('webgl', { antialias: false, premultipliedAlpha: false });
+  if (!gl) return;
 
-Wyrażam zgodę, aby lektor [imię i nazwisko lektora] używał narzędzia WrapItUp do nagrywania dźwięku lekcji online i przetwarzania zapisu rozmowy w celu przygotowania podsumowania lekcji (poprawki, słownictwo, uwagi dotyczące mówienia).
-
-- Nagranie dźwięku jest zamieniane na tekst i usuwane po zatwierdzeniu podsumowania przez lektora, najpóźniej po 7 dniach.
-- Podsumowanie sprawdza i zatwierdza lektor, zanim trafi do mnie.
-- Zgoda jest dobrowolna. Mogę ją wycofać w każdej chwili i poprosić lektora o usunięcie danych z moich lekcji.
-- Zgoda dotyczy wszystkich lekcji z tym lektorem, dopóki jej nie wycofam.`,
-    minor: () =>
-`Zgoda rodzica na nagrywanie i przetwarzanie lekcji dziecka w celu przygotowania podsumowania
-
-Wyrażam zgodę, aby lektor [imię i nazwisko lektora] nagrywał lekcje mojego dziecka [imię dziecka] za pomocą narzędzia WrapItUp (nagranie dźwięku lekcji online) i przetwarzał zapis rozmowy w celu przygotowania podsumowania lekcji (poprawki, słownictwo, uwagi dotyczące mówienia).
-
-- Nagranie dźwięku jest zamieniane na tekst i usuwane po zatwierdzeniu podsumowania przez lektora, najpóźniej po 7 dniach.
-- Podsumowanie sprawdza i zatwierdza lektor, zanim trafi do mojego dziecka.
-- Zgoda jest dobrowolna. Mogę ją wycofać w każdej chwili i poprosić lektora o usunięcie danych z lekcji mojego dziecka.
-- Zgoda dotyczy wszystkich lekcji mojego dziecka z tym lektorem, dopóki jej nie wycofam.`
+  var CONFIG = {
+    bg: '#F7F6F1',                                  // paper
+    colors: ['#D3E6E7', '#006C76', '#D9E26F', '#F65B62'], // petrol tint, petrol, citron, coral
+    speed: 1.2,
+    grain: 0.1,
+    glow: 0.08,
+    intensity: 0.9                                  // 0 = sam paper, 1 = pełny gradient
   };
 
-  const studentInput = document.getElementById("student-label");
-  const templateBox = document.getElementById("template");
-  const confirmBox = document.getElementById("confirm");
-  const savedBox = document.getElementById("saved");
-  const toReview = document.getElementById("to-review");
-  const copyNote = document.getElementById("copy-note");
-  let confirmedAt = null;
+  var vs = 'attribute vec2 position; varying vec2 vUv;' +
+    'void main(){ vUv = position * 0.5 + 0.5; gl_Position = vec4(position, 0.0, 1.0); }';
 
-  const today = () => new Date().toLocaleDateString("pl-PL");
-  const studentLabel = () => studentInput.value.trim() || "[etykieta ucznia]";
-  const variant = () => document.querySelector('input[name="variant"]:checked').value;
+  var fs = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform vec2 u_resolution; uniform float u_time; uniform float u_grain; uniform float u_glow; uniform float u_intensity;',
+    'uniform vec3 u_colors[4]; uniform vec3 u_bg;',
+    'vec3 permute(vec3 x){ return mod(((x*34.0)+1.0)*x, 289.0); }',
+    'float snoise(vec2 v){',
+    '  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);',
+    '  vec2 i = floor(v + dot(v, C.yy)); vec2 x0 = v - i + dot(i, C.xx);',
+    '  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);',
+    '  vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1; i = mod(i, 289.0);',
+    '  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));',
+    '  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);',
+    '  m = m*m; m = m*m;',
+    '  vec3 x = 2.0 * fract(p * C.www) - 1.0; vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5); vec3 a0 = x - ox;',
+    '  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);',
+    '  vec3 g; g.x = a0.x * x0.x + h.x * x0.y; g.yz = a0.yz * x12.xz + h.yz * x12.yw;',
+    '  return 130.0 * dot(m, g);',
+    '}',
+    'void main(){',
+    '  vec2 uv = vUv; float ratio = u_resolution.x / u_resolution.y;',
+    '  vec2 p = uv - 0.5; p.x *= ratio;',
+    '  float t = u_time * 0.1;',
+    '  float n1 = snoise(p * 0.4 + vec2(t * 0.2, -t * 0.3));',
+    '  float n2 = snoise(p * 0.55 + vec2(-t * 0.15, t * 0.25) + n1 * 0.25);',
+    '  float n3 = snoise(p * 0.75 + vec2(t * 0.1, -t * 0.2) + n2 * 0.2);',
+    '  vec3 col = u_bg;',
+    '  float dist = length(p) * 1.5;',
+    '  float vignette = 1.0 - smoothstep(0.6, 1.6, dist);',
+    '  col = mix(col, u_colors[0], smoothstep(-0.2, 0.5, n1) * 0.85);',
+    '  col = mix(col, u_colors[1], smoothstep(-0.1, 0.6, n2) * 0.8);',
+    '  col = mix(col, u_colors[2], smoothstep(-0.3, 0.4, n3) * 0.9);',
+    '  col = mix(col, u_colors[3], smoothstep(0.0, 0.7, n1 * n2) * 0.7);',
+    '  col += u_colors[1] * smoothstep(0.8, 0.0, dist) * u_glow;',
+    '  col = mix(u_bg, col, vignette);',               // winieta do koloru tła
+    '  col = mix(u_bg, col, smoothstep(0.0, 0.3, uv.y));', // dół wtapia się w paper
+    '  col = mix(u_bg, col, u_intensity);',             // stonowanie całości
+    '  float grain = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453 + u_time);',
+    '  col += (grain - 0.5) * u_grain * 0.1;',
+    '  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);',
+    '}'
+  ].join('\n');
 
-  function renderConsent() {
-    templateBox.textContent = TEMPLATES[variant()](studentLabel(), confirmedAt || today());
-    savedBox.hidden = !confirmBox.checked;
-    if (confirmBox.checked) savedBox.textContent = `Zgoda zapisana dla: ${studentLabel()}, ${confirmedAt}`;
-    toReview.disabled = !confirmBox.checked;
+  function shader(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+  var prog = gl.createProgram();
+  gl.attachShader(prog, shader(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+  gl.useProgram(prog);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  var pos = gl.getAttribLocation(prog, 'position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+
+  function rgb(hex) { var h = hex.replace('#', ''); return [0, 2, 4].map(function (i) { return parseInt(h.slice(i, i + 2), 16) / 255; }); }
+  var u = function (n) { return gl.getUniformLocation(prog, n); };
+  gl.uniform1f(u('u_grain'), CONFIG.grain);
+  gl.uniform1f(u('u_glow'), CONFIG.glow);
+  gl.uniform1f(u('u_intensity'), CONFIG.intensity);
+  gl.uniform3fv(u('u_bg'), rgb(CONFIG.bg));
+  gl.uniform3fv(u('u_colors'), new Float32Array([].concat.apply([], CONFIG.colors.map(rgb))));
+  var uRes = u('u_resolution'), uTime = u('u_time');
+
+  // Wysokość tła = od góry strony do dołu nagłówka aktywnego widoku (hero / tytuł skrótu / tytuł case study).
+  function size() {
+    var view = document.querySelector('[data-view].is-active');
+    var head = view && view.querySelector('.hero, .page-head, .cs-head');
+    var h = head ? Math.ceil(head.getBoundingClientRect().bottom + window.scrollY) : 0;
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    canvas.style.height = h + 'px';
+    canvas.width = Math.max(1, Math.round(canvas.clientWidth * dpr));
+    canvas.height = Math.max(1, Math.round(h * dpr));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (!running) draw(start);
   }
 
-  studentInput.addEventListener("input", renderConsent);
-  document.querySelectorAll('input[name="variant"]').forEach(r => r.addEventListener("change", renderConsent));
-  confirmBox.addEventListener("change", () => {
-    confirmedAt = confirmBox.checked ? today() : null;
-    renderConsent();
-  });
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var visible = true, running = false, raf = 0, start = 4000;
+  function draw(t) { gl.uniform1f(uTime, t * 0.001 * CONFIG.speed); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
+  function loop(t) { draw(start + t); raf = requestAnimationFrame(loop); }
+  function update() {
+    var should = visible && !reduce.matches && !document.hidden;
+    if (should && !running) { running = true; raf = requestAnimationFrame(loop); }
+    else if (!should && running) { running = false; cancelAnimationFrame(raf); draw(start); }
+  }
 
-  document.getElementById("copy").addEventListener("click", async () => {
-    const text = templateBox.textContent;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Zapasowo dla przeglądarek, które blokują schowek dla plików lokalnych
-      const ta = el("textarea");
-      ta.value = text;
-      document.body.append(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-    }
-    copyNote.textContent = "Skopiowano";
-    setTimeout(() => { copyNote.textContent = ""; }, 2000);
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (e) { visible = e[0].isIntersecting; update(); }).observe(canvas);
+  }
+  if (reduce.addEventListener) reduce.addEventListener('change', update);
+  document.addEventListener('visibilitychange', update);
+  window.addEventListener('resize', size);
+  window.addEventListener('hashchange', function () { requestAnimationFrame(size); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(size);
+  if ('ResizeObserver' in window) new ResizeObserver(size).observe(document.body);
+  size();
+  update();
+})();
+</script>
+<script>
+/* Kluczowe liczby: pojawiają się przy przewijaniu */
+(function () {
+  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.documentElement.classList.add('reveal-on');
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.3 });
+  Array.prototype.forEach.call(document.querySelectorAll('.tickets li'), function (li, i) {
+    li.style.setProperty('--i', i % 4);
+    io.observe(li);
   });
+})();
+</script>
+<script>
+/* Hero: żywe demo zamiast zrzutu (tylko > 768 px i mysz). Kółko przewija demo dopiero po świadomym najechaniu. */
+(function () {
+  var box = document.getElementById('live');
+  if (!box) return;
+  var frame = box.querySelector('.live-demo');
+  var mq = window.matchMedia('(min-width: 769px) and (hover: hover) and (pointer: fine)');
+  var lastWheel = 0;
 
-  toReview.addEventListener("click", () => {
-    if (!confirmBox.checked) return;
-    document.getElementById("lesson-student").textContent = studentLabel();
-    document.body.classList.replace("consent", "recording");
-    window.scrollTo(0, 0);
+  function fit() {
+    var w = box.clientWidth, h = box.clientHeight;
+    if (!w) return;
+    var s = w / 1280;
+    frame.style.setProperty('--s', s);
+    frame.style.height = (h / s) + 'px';
+  }
+  function setHot(on) { box.classList.toggle('is-hot', on); frame.tabIndex = on ? 0 : -1; }
+  function apply() {
+    var on = mq.matches;
+    if (on && !frame.getAttribute('src')) frame.setAttribute('src', frame.getAttribute('data-src'));
+    box.classList.toggle('is-on', on);
+    if (!on) setHot(false);
+    fit();
+  }
+
+  // Scroll strony nad ramką: dopóki demo nie jest „gorące”, kółko przewija stronę.
+  box.addEventListener('wheel', function () { if (!box.classList.contains('is-hot')) lastWheel = Date.now(); }, { passive: true });
+  // Aktywuje tylko prawdziwy ruch myszy (nie sztuczny mousemove po przewinięciu strony).
+  var lx = null, ly = null;
+  box.addEventListener('mousemove', function (e) {
+    var moved = lx !== null && (Math.abs(e.screenX - lx) + Math.abs(e.screenY - ly) > 2);
+    lx = e.screenX; ly = e.screenY;
+    if (moved && box.classList.contains('is-on') && !box.classList.contains('is-hot') && Date.now() - lastWheel > 250) setHot(true);
   });
+  box.addEventListener('mouseleave', function () { lx = ly = null; setHot(false); });
+  // Po wyjściu kursora z iframe strona znowu dostaje mousemove: wyłącz demo, jeśli kursor jest poza ramką.
+  document.addEventListener('mousemove', function (e) { if (!box.contains(e.target)) { lx = ly = null; setHot(false); } });
 
-  // Ekran lekcji w toku (makieta: nic nie jest nagrywane)
-  document.getElementById("end-lesson").addEventListener("click", () => {
-    document.body.classList.remove("recording");
-    window.scrollTo(0, 0);
-  });
-
-  renderConsent();
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(box); else window.addEventListener('resize', fit);
+  if (mq.addEventListener) mq.addEventListener('change', apply); else mq.addListener(apply);
+  apply();
+})();
 </script>
 </body>
 </html>
